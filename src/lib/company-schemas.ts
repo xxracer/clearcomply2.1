@@ -13,8 +13,9 @@ const applicationFormSchema = z.object({
   id: z.string(),
   name: z.string(),
   type: z.enum(['template', 'custom']).default('template'),
-  images: z.array(z.string()).optional(),
+  images: z.array(z.string()).optional(), // URLs/keys to images in Vercel Blob/KV
 });
+export type ApplicationForm = z.infer<typeof applicationFormSchema>;
 
 // Represents a complete, reusable onboarding process
 export const onboardingProcessSchema = z.object({
