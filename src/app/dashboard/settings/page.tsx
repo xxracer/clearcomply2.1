@@ -58,7 +58,7 @@ export default function SettingsPage() {
       if (!firstCompany.onboardingProcesses || firstCompany.onboardingProcesses.length === 0) {
           firstCompany.onboardingProcesses = [{
               id: generateIdForServer(),
-              name: "New Onboarding Process #1",
+              name: "Custom Form 1",
               applicationForm: { id: generateIdForServer(), name: "Default Template Form", type: 'template', images: [] },
               interviewScreen: { type: 'template' },
               requiredDocs: [],
@@ -132,16 +132,19 @@ export default function SettingsPage() {
       startTransition(async () => {
           try {
               const imageKey = `form-image-${company.name?.replace(/\s+/g, '-')}-${processId}-${Date.now()}`;
-              const url = await uploadKvFile(file, imageKey); // uploadKvFile returns the key now
+              await uploadKvFile(file, imageKey); // uploadKvFile returns the key now
+              
               const updatedProcesses = company.onboardingProcesses?.map(p => {
                   if (p.id === processId) {
-                      const currentImages = p.applicationForm?.images || [];
-                      // The URL from uploadKvFile is the key itself.
-                      const updatedAppForm = { ...p.applicationForm, images: [...currentImages, url] };
+                      // The applicationForm might not exist, so we ensure it does.
+                      const appForm = p.applicationForm || { id: generateIdForServer(), name: "Custom Form", type: 'custom', images: [] };
+                      const currentImages = appForm.images || [];
+                      const updatedAppForm = { ...appForm, images: [...currentImages, imageKey] };
                       return { ...p, applicationForm: updatedAppForm };
                   }
                   return p;
               }) || [];
+
               handleFieldChange('onboardingProcesses', updatedProcesses);
               toast({ title: "Image Uploaded", description: "The form image has been added." });
           } catch (error) {
