@@ -21,7 +21,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const allPossibleDocs: RequiredDoc[] = [
@@ -310,6 +310,7 @@ export default function SettingsPage() {
   }
 
   return (
+    <TooltipProvider>
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
@@ -587,5 +588,6 @@ export default function SettingsPage() {
       </Card>
 
     </div>
+    </TooltipProvider>
   );
 }
