@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Building, Save, PlusCircle, Trash2, Loader2, Workflow, Edit, Upload, Wand2, Library, Eye, Info } from "lucide-react";
+import { Settings, Building, Save, PlusCircle, Trash2, Loader2, Workflow, Edit, Upload, Wand2, Library, Eye, Info, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,15 @@ export default function SettingsPage() {
 
   const [isAddDocDialogOpen, setIsAddDocDialogOpen] = useState(false);
   const [selectedProcessForDoc, setSelectedProcessForDoc] = useState<string | null>(null);
+
+  // State for alert dialogs
+  const [isCompanyDetailsDialogOpen, setCompanyDetailsDialogOpen] = useState(false);
+  const [isFormLibraryDialogOpen, setFormLibraryDialogOpen] = useState(false);
+  const [isAiBuilderDialogOpen, setAiBuilderDialogOpen] = useState(false);
+
+  // State for the "click here first" hint
+  const [companyDetailsHintViewed, setCompanyDetailsHintViewed] = useState(false);
+  const showCompanyDetailsHint = !company.name && !companyDetailsHintViewed;
 
 
   // Load initial company data
@@ -323,13 +332,19 @@ export default function SettingsPage() {
       
       <Card>
         <CardContent className="p-4">
-          <div className="border rounded-lg p-4">
+          <div className="border rounded-lg p-4 relative">
+             {showCompanyDetailsHint && (
+                <div className="absolute -top-12 right-0 flex items-center gap-2 p-2 bg-background rounded-md shadow-lg animate-pulse z-10">
+                    <p className="text-sm font-medium text-primary">Click here first!</p>
+                    <ArrowRight className="h-5 w-5 text-primary"/>
+                </div>
+            )}
             <div className="flex items-center gap-2">
                 <CardTitle className="mb-1 flex items-center gap-2 text-xl">
                     <Building className="h-5 w-5" />
                     Company Details
                 </CardTitle>
-                <AlertDialog>
+                <AlertDialog open={isCompanyDetailsDialogOpen} onOpenChange={setCompanyDetailsDialogOpen}>
                     <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></Button>
                     </AlertDialogTrigger>
@@ -341,13 +356,13 @@ export default function SettingsPage() {
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Got it!</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => setCompanyDetailsHintViewed(true)}>Got it!</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
             </div>
             <CardDescription className="mb-6">Manage the company profile and associated onboarding users. Remember to save your changes.</CardDescription>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <fieldset disabled={showCompanyDetailsHint} className="grid grid-cols-1 md:grid-cols-2 gap-8 disabled:opacity-50">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="company-name">Company Name</Label>
@@ -395,9 +410,9 @@ export default function SettingsPage() {
                 </div>
                 <Button className="w-full" disabled><PlusCircle className="mr-2 h-4 w-4" /> Add User</Button>
               </div>
-            </div>
+            </fieldset>
             <div className="mt-6">
-              <Button size="lg" disabled={isPending} onClick={handleSave}>
+              <Button size="lg" disabled={isPending || showCompanyDetailsHint} onClick={handleSave}>
                 {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Save Company & Continue
               </Button>
@@ -410,7 +425,7 @@ export default function SettingsPage() {
         <CardHeader>
             <div className="flex items-center gap-2">
                 <CardTitle className="flex items-center gap-2"><Library className="h-5 w-5" /> Form Library</CardTitle>
-                 <AlertDialog>
+                 <AlertDialog open={isFormLibraryDialogOpen} onOpenChange={setFormLibraryDialogOpen}>
                     <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></Button>
                     </AlertDialogTrigger>
@@ -422,7 +437,7 @@ export default function SettingsPage() {
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Got it!</AlertDialogCancel>
+                            <AlertDialogAction>Got it!</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -476,7 +491,7 @@ export default function SettingsPage() {
                                 <div className="flex items-center space-x-2"><RadioGroupItem value="template" id={`template-${process.id}`} /><Label htmlFor={`template-${process.id}`}>Use Template Application Form</Label></div>
                                 <div className="flex items-center space-x-2"><RadioGroupItem value="custom" id={`custom-${process.id}`} /><Label htmlFor={`custom-${process.id}`}>Use Custom Application Form Images</Label></div>
                             </RadioGroup>
-                             <AlertDialog>
+                            <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></Button>
                                 </AlertDialogTrigger>
@@ -607,7 +622,7 @@ export default function SettingsPage() {
         <CardHeader>
             <div className="flex items-center gap-2">
                 <CardTitle className="flex items-center gap-2 text-xl"><Wand2 className="h-5 w-5 text-primary" /> AI-Powered Form Builder</CardTitle>
-                 <AlertDialog>
+                 <AlertDialog open={isAiBuilderDialogOpen} onOpenChange={setAiBuilderDialogOpen}>
                     <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></Button>
                     </AlertDialogTrigger>
@@ -619,7 +634,7 @@ export default function SettingsPage() {
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Got it!</AlertDialogCancel>
+                            <AlertDialogAction>Got it!</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
