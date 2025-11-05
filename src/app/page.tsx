@@ -2,8 +2,7 @@
 'use client';
 
 import { LoginForm } from "@/components/auth/login-form";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ClipboardCheck, Info } from "lucide-react";
+import { ClipboardCheck } from "lucide-react";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -20,13 +19,6 @@ export default function HomePage() {
           <h1 className="font-headline text-3xl font-bold text-center">Secure Login</h1>
           <p className="text-muted-foreground text-center">Enter your credentials to access your dashboard.</p>
         </div>
-        <Alert className="mb-4">
-            <Info className="h-4 w-4" />
-            <AlertTitle>Demo Access</AlertTitle>
-            <AlertDescription>
-                You can use the pre-filled credentials to log in and explore the dashboard.
-            </AlertDescription>
-        </Alert>
         <LoginForm />
         <div className="mt-4 text-center text-xs">
           <Link href="/superuser/login" className="text-muted-foreground hover:text-primary underline">

@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 export function LoginForm() {
   const router = useRouter();
@@ -42,7 +44,19 @@ export function LoginForm() {
         </CardHeader>
           <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1.5 cursor-help">
+                        <Label htmlFor="email">Email</Label>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>This is a demo. You can use the pre-filled credentials to log in.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <Input 
                   id="email" 
                   type="email" 
