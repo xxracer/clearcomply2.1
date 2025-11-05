@@ -440,9 +440,25 @@ export default function SettingsPage() {
                             <span className="font-semibold">{process.name}</span>
                         </div>
                     </AccordionTrigger>
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleRemoveProcess(process.id); }} disabled={(company.onboardingProcesses?.length || 0) <= 1}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} disabled={(company.onboardingProcesses?.length || 0) <= 1}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This will permanently delete the "{process.name}" onboarding process. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleRemoveProcess(process.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
                 <AccordionContent className="p-4 space-y-6">
                     {/* Phase 1 */}
