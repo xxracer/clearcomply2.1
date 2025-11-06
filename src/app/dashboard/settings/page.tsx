@@ -333,34 +333,38 @@ export default function SettingsPage() {
       <Card>
         <CardContent className="p-4">
           <div className="border rounded-lg p-4 relative">
-             <div className="flex items-center gap-2 relative">
-                <CardTitle className="mb-1 flex items-center gap-2 text-xl">
-                    <Building className="h-5 w-5" />
-                    Company Details
-                </CardTitle>
-                <AlertDialog open={isCompanyDetailsDialogOpen} onOpenChange={setCompanyDetailsDialogOpen}>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>About Company Details</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This information will be used across the application portal, including on application forms and documentation requests to personalize the experience for your candidates.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogAction onClick={() => setCompanyDetailsHintViewed(true)}>Got it!</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-                 {showCompanyDetailsHint && (
-                    <div className="absolute -top-5 left-40 flex items-center gap-2 p-2 bg-background rounded-md animate-pulse z-10">
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <CardTitle className="mb-1 flex items-center gap-2 text-xl">
+                        <Building className="h-5 w-5" />
+                        Company Details
+                    </CardTitle>
+                    <AlertDialog open={isCompanyDetailsDialogOpen} onOpenChange={setCompanyDetailsDialogOpen}>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>About Company Details</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This information will be used across the application portal, including on application forms and documentation requests to personalize the experience for your candidates.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogAction onClick={() => setCompanyDetailsHintViewed(true)}>Got it!</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+
+                {showCompanyDetailsHint && (
+                    <div className="absolute top-4 right-4 flex items-center gap-2 p-2 bg-background rounded-md animate-pulse z-10">
                         <p className="text-sm font-medium text-primary">Click here first!</p>
-                        <ArrowRight className="h-5 w-5 text-primary"/>
+                        <ArrowRight className="h-5 w-5 text-primary -scale-x-100" />
                     </div>
                 )}
             </div>
+
             <CardDescription className="mb-6">Manage the company profile and associated onboarding users. Remember to save your changes.</CardDescription>
             <fieldset disabled={showCompanyDetailsHint} className="grid grid-cols-1 md:grid-cols-2 gap-8 disabled:opacity-50">
               <div className="space-y-4">
