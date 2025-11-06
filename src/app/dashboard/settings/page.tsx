@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 
 const allPossibleDocs: RequiredDoc[] = [
@@ -53,6 +54,7 @@ export default function SettingsPage() {
   const [isCompanyDetailsDialogOpen, setCompanyDetailsDialogOpen] = useState(false);
   const [isFormLibraryDialogOpen, setFormLibraryDialogOpen] = useState(false);
   const [isAiBuilderDialogOpen, setAiBuilderDialogOpen] = useState(false);
+  const [isCustomFormInfoOpen, setIsCustomFormInfoOpen] = useState(false);
 
   // State for the "click here first" hint
   const [companyDetailsHintViewed, setCompanyDetailsHintViewed] = useState(false);
@@ -309,6 +311,16 @@ export default function SettingsPage() {
     }
   };
 
+  const [activeProcessId, setActiveProcessId] = useState<string | null>(company.onboardingProcesses?.[0]?.id || null);
+
+  useEffect(() => {
+    if (company.onboardingProcesses && company.onboardingProcesses.length > 0) {
+      setActiveProcessId(company.onboardingProcesses[0].id);
+    }
+  }, [company.onboardingProcesses]);
+
+  const activeProcess = company.onboardingProcesses?.find(p => p.id === activeProcessId);
+
 
   if (isLoading) {
     return (
@@ -356,8 +368,8 @@ export default function SettingsPage() {
                         </AlertDialogContent>
                     </AlertDialog>
                     {showCompanyDetailsHint && (
-                        <div className="flex items-center gap-2 animate-pulse">
-                             <ArrowRight className="h-5 w-5 text-primary -scale-x-100" />
+                        <div className="flex items-center gap-2 animate-pulse ml-2">
+                           <ArrowRight className="h-5 w-5 text-primary -scale-x-100" />
                             <p className="text-sm font-medium text-primary">Click here first!</p>
                         </div>
                     )}
@@ -448,179 +460,98 @@ export default function SettingsPage() {
             </div>
             <CardDescription>Manage your saved application forms and onboarding processes.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Accordion type="multiple" className="w-full" defaultValue={[(company.onboardingProcesses?.[0]?.id || '')]}>
-            {(company.onboardingProcesses || []).map((process) => (
-              <AccordionItem value={process.id} key={process.id}>
-                <div className="flex items-center justify-between w-full pr-4 border-b">
-                    <AccordionTrigger className="flex-1 hover:no-underline py-4">
-                        <div className="flex items-center gap-2">
-                            <Workflow className="h-5 w-5" />
-                            <span className="font-semibold">{process.name}</span>
-                        </div>
-                    </AccordionTrigger>
-                    <AlertDialog>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Left Column: Form List */}
+          <div className="md:col-span-1 space-y-2">
+            <h3 className="font-semibold px-2">Available Forms</h3>
+            <div className="flex flex-col gap-1">
+              <Button
+                variant={activeProcessId === company.onboardingProcesses?.[0]?.id ? "secondary" : "ghost"}
+                className="justify-start"
+                onClick={() => setActiveProcessId(company.onboardingProcesses?.[0]?.id || null)}
+              >
+                {company.onboardingProcesses?.[0]?.name || 'Custom Form 1'}
+              </Button>
+              <Button variant="ghost" className="justify-start text-muted-foreground" disabled>Custom Form 2 <span className="text-xs ml-auto">(Available soon)</span></Button>
+              <Button variant="ghost" className="justify-start text-muted-foreground" disabled>Custom Form 3 <span className="text-xs ml-auto">(Available soon)</span></Button>
+              <Button variant="ghost" className="justify-start text-muted-foreground" disabled>Custom Form 4 <span className="text-xs ml-auto">(Available soon)</span></Button>
+            </div>
+          </div>
+
+          {/* Right Column: Form Editor */}
+          <div className="md:col-span-2 border rounded-lg p-4 space-y-6">
+            {activeProcess ? (
+              <>
+                <div>
+                  <Label htmlFor="form-name">Form Name</Label>
+                  <Input 
+                    id="form-name" 
+                    value={activeProcess.name}
+                    onChange={(e) => handleProcessChange(activeProcess.id, 'name', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                    <RadioGroup 
+                        value={activeProcess.applicationForm?.type || 'template'} 
+                        onValueChange={(value) => handleApplicationFormChange(activeProcess.id, 'type', value)} 
+                        className="flex items-center gap-4 mt-2"
+                    >
+                        <div className="flex items-center space-x-2"><RadioGroupItem value="template" id={`template-${activeProcess.id}`} /><Label htmlFor={`template-${activeProcess.id}`}>Use Template Application Form</Label></div>
+                        <div className="flex items-center space-x-2"><RadioGroupItem value="custom" id={`custom-${activeProcess.id}`} /><Label htmlFor={`custom-${activeProcess.id}`}>Use Custom Application Form Images</Label></div>
+                    </RadioGroup>
+                </div>
+
+                {activeProcess.applicationForm?.type === 'custom' && (
+                  <div className="p-4 border rounded-md space-y-4 bg-muted/20">
+                    <div className="flex items-center gap-2">
+                      <Label className="font-semibold">Custom Form Images (PDF/Image)</Label>
+                       <AlertDialog open={isCustomFormInfoOpen} onOpenChange={setIsCustomFormInfoOpen}>
                         <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} disabled={(company.onboardingProcesses?.length || 0) <= 1}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogTitle>Custom Application Forms</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                This will permanently delete the "{process.name}" onboarding process. This action cannot be undone.
+                                    You can upload images or a PDF of your existing paper application form. Candidates will see these images but will not be able to fill them out online. You will need to contact them separately to complete the application.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleRemoveProcess(process.id)}>Delete</AlertDialogAction>
+                                <AlertDialogAction>Got it!</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
+                    </div>
+                     <div className="space-y-2">
+                        {(activeProcess.applicationForm?.images || []).map((imgKey) => (
+                            <div key={imgKey} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                                <div className="flex items-center gap-2 text-sm truncate"><FileIcon className="h-4 w-4" /><span className="truncate">{imgKey.split('/').pop()}</span></div>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveCustomFormImage(activeProcess.id, imgKey)} disabled={isPending}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            </div>
+                        ))}
+                    </div>
+                    {(!activeProcess.applicationForm?.images || activeProcess.applicationForm.images.length === 0) && <p className="text-sm text-muted-foreground text-center py-4">No images uploaded.</p>}
+                     <div className="flex items-center gap-2">
+                        <Label htmlFor={`upload-${activeProcess.id}`} className="flex-grow"><Button asChild variant="outline" className="w-full cursor-pointer"><span><Upload className="mr-2 h-4 w-4" /> Upload PDF or Image</span></Button></Label>
+                        <Input id={`upload-${activeProcess.id}`} type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => e.target.files && handleCustomFormImageUpload(activeProcess.id, e.target.files[0])} disabled={isPending}/>
+                    </div>
+                  </div>
+                )}
+                 <div className="flex justify-end">
+                    <Button onClick={handleSave}>
+                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Save Form
+                    </Button>
                 </div>
-                <AccordionContent className="p-4 space-y-6">
-                    {/* Phase 1 */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Phase 1: Application Form</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <RadioGroup 
-                                value={process.applicationForm?.type || 'template'} 
-                                onValueChange={(value) => handleApplicationFormChange(process.id, 'type', value)} 
-                                className="flex items-center gap-4 mt-2"
-                            >
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="template" id={`template-${process.id}`} /><Label htmlFor={`template-${process.id}`}>Use Template Application Form</Label></div>
-                                <div className="flex items-center space-x-2"><RadioGroupItem value="custom" id={`custom-${process.id}`} /><Label htmlFor={`custom-${process.id}`}>Use Custom Application Form Images</Label></div>
-                            </RadioGroup>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Template vs. Custom Forms</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            <p>'Template' uses the built-in dynamic form that candidates can fill out online.</p><br /><p>'Custom' allows you to upload images/PDFs of your own form, but candidates cannot fill it out online and must be contacted separately.</p>
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Got it!</AlertDialogCancel>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                        {process.applicationForm?.type === 'custom' && (
-                          <div className="p-4 border rounded-md space-y-4 bg-background mt-2">
-                            <Label className="font-semibold">Custom Form Images</Label>
-                            <div className="space-y-2">
-                                {(process.applicationForm?.images || []).map((imgKey) => (
-                                    <div key={imgKey} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                                        <div className="flex items-center gap-2 text-sm truncate"><FileIcon className="h-4 w-4" /><span className="truncate">{imgKey.split('/').pop()}</span></div>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveCustomFormImage(process.id, imgKey)} disabled={isPending}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                    </div>
-                                ))}
-                            </div>
-                            {(!process.applicationForm?.images || process.applicationForm.images.length === 0) && <p className="text-sm text-muted-foreground text-center py-4">No images uploaded.</p>}
-                            <div className="flex items-center gap-2">
-                                <Label htmlFor={`upload-${process.id}`} className="flex-grow"><Button asChild variant="outline" className="w-full cursor-pointer"><span><Upload className="mr-2 h-4 w-4" /> Upload Image</span></Button></Label>
-                                <Input id={`upload-${process.id}`} type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files && handleCustomFormImageUpload(process.id, e.target.files[0])} disabled={isPending}/>
-                            </div>
-                          </div>
-                        )}
-                      </CardContent>
-                      <CardContent className="border-t pt-4">
-                        <Button variant="outline" size="sm" asChild>
-                           <Link href="/dashboard/settings/preview/application" target="_blank"><Eye className="mr-2 h-4 w-4" /> Preview Phase 1 Page</Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
-
-                    {/* Phase 2 */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Phase 2: Interview Screen</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                         <RadioGroup 
-                            value={process.interviewScreen?.type || 'template'} 
-                            onValueChange={(value) => handleInterviewScreenChange(process.id, 'type', value)} 
-                            className="flex items-center gap-4 mt-2"
-                        >
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="template" id={`int-template-${process.id}`} /><Label htmlFor={`int-template-${process.id}`}>Use Template Interview Screen</Label></div>
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="custom" id={`int-custom-${process.id}`} /><Label htmlFor={`int-custom-${process.id}`}>Use Custom Background Image</Label></div>
-                        </RadioGroup>
-                         {process.interviewScreen?.type === 'custom' && (
-                            <div className="p-4 border rounded-md space-y-4 bg-background mt-2">
-                                <Label className="font-semibold">Custom Background Image</Label>
-                                {process.interviewScreen.imageUrl && <Image src={process.interviewScreen.imageUrl} alt="Interview background preview" width={100} height={56} className="rounded-md object-cover" />}
-                                <Input type="file" accept="image/*" onChange={(e) => e.target.files && handleInterviewImageUpload(process.id, e.target.files[0])} disabled={isPending} />
-                            </div>
-                         )}
-                      </CardContent>
-                       <CardContent className="border-t pt-4">
-                        <Button variant="outline" size="sm" asChild>
-                           <Link href="/dashboard/settings/preview/interview" target="_blank"><Eye className="mr-2 h-4 w-4" /> Preview Phase 2 Page</Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
-
-                    {/* Phase 3 */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Phase 3: Required Documentation</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                          <Label>Select documents required for this process</Label>
-                           {(process.requiredDocs && process.requiredDocs.length > 0) ? (
-                            <div className="space-y-2 pt-2">
-                              {process.requiredDocs.map(doc => (
-                                <div key={doc.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
-                                  <span>{doc.label}</span>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveRequiredDoc(process.id, doc.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                </div>
-                              ))}
-                            </div>
-                           ) : (
-                            <p className="text-sm text-muted-foreground pt-2">No documents added yet.</p>
-                           )}
-                           <Dialog open={isAddDocDialogOpen && selectedProcessForDoc === process.id} onOpenChange={setIsAddDocDialogOpen}>
-                              <DialogTrigger asChild>
-                                <Button variant="outline" className="mt-2" onClick={() => {setSelectedProcessForDoc(process.id); setIsAddDocDialogOpen(true); }}>
-                                  <PlusCircle className="mr-2 h-4 w-4" /> Add Document
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader><DialogTitle>Add a Required Document</DialogTitle></DialogHeader>
-                                <Select onValueChange={(value) => handleAddRequiredDoc(value)}>
-                                  <SelectTrigger><SelectValue placeholder="Select a document to add..." /></SelectTrigger>
-                                  <SelectContent>
-                                    <SelectGroup>
-                                      <SelectLabel>Official Forms</SelectLabel>
-                                      {allPossibleDocs.map(doc => <SelectItem key={doc.id} value={doc.id}>{doc.label}</SelectItem>)}
-                                    </SelectGroup>
-                                  </SelectContent>
-                                </Select>
-                              </DialogContent>
-                           </Dialog>
-                      </CardContent>
-                       <CardContent className="border-t pt-4">
-                        <Button variant="outline" size="sm" asChild>
-                           <Link href="/dashboard/settings/preview/documentation" target="_blank"><Eye className="mr-2 h-4 w-4" /> Preview Phase 3 Page</Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-          <Button variant="outline" onClick={handleAddNewProcess} className="mt-4">
-            <PlusCircle className="mr-2 h-4 w-4" /> Add New Onboarding Process
-          </Button>
+              </>
+            ) : (
+                <div className="text-center text-muted-foreground py-10">Select a form from the library to edit.</div>
+            )}
+          </div>
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader>
@@ -655,6 +586,5 @@ export default function SettingsPage() {
 
     </div>
   );
-}
 
     
