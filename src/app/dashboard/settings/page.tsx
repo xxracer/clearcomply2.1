@@ -355,14 +355,14 @@ export default function SettingsPage() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
+                    {showCompanyDetailsHint && (
+                        <div className="flex items-center gap-2 animate-pulse">
+                             <ArrowRight className="h-5 w-5 text-primary -scale-x-100" />
+                            <p className="text-sm font-medium text-primary">Click here first!</p>
+                        </div>
+                    )}
                 </div>
 
-                {showCompanyDetailsHint && (
-                    <div className="absolute top-4 right-4 flex items-center gap-2 p-2 bg-background rounded-md animate-pulse z-10">
-                        <p className="text-sm font-medium text-primary">Click here first!</p>
-                        <ArrowRight className="h-5 w-5 text-primary -scale-x-100" />
-                    </div>
-                )}
             </div>
 
             <CardDescription className="mb-6">Manage the company profile and associated onboarding users. Remember to save your changes.</CardDescription>
@@ -658,8 +658,3 @@ export default function SettingsPage() {
 }
 
     
-
-    
-
-    
-
