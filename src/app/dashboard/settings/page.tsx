@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { AiFormBuilderDialog } from "@/components/dashboard/settings/ai-form-builder-dialog";
 
 
 const allPossibleDocs: RequiredDoc[] = [
@@ -43,9 +44,7 @@ export default function SettingsPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   // AI Form Builder state
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedForm, setGeneratedForm] = useState<any>(null);
+  const [isAiBuilderOpen, setIsAiBuilderOpen] = useState(false);
 
   const [isAddDocDialogOpen, setIsAddDocDialogOpen] = useState(false);
   const [selectedProcessForDoc, setSelectedProcessForDoc] = useState<string | null>(null);
@@ -53,7 +52,6 @@ export default function SettingsPage() {
   // State for alert dialogs
   const [isCompanyDetailsDialogOpen, setCompanyDetailsDialogOpen] = useState(false);
   const [isFormLibraryDialogOpen, setFormLibraryDialogOpen] = useState(false);
-  const [isAiBuilderDialogOpen, setAiBuilderDialogOpen] = useState(false);
   const [isCustomFormInfoOpen, setIsCustomFormInfoOpen] = useState(false);
 
   // State for the "click here first" hint
@@ -204,16 +202,17 @@ export default function SettingsPage() {
       });
   }
 
-  const handleAddNewProcess = () => {
+  const handleAddNewProcess = (name: string, type: 'template' | 'custom' = 'template') => {
       const newProcess: OnboardingProcess = {
           id: generateIdForServer(),
-          name: `New Onboarding Process #${ (company.onboardingProcesses?.length || 0) + 1}`,
-          applicationForm: { id: generateIdForServer(), name: "New Form", type: 'template', images: [] },
+          name: name,
+          applicationForm: { id: generateIdForServer(), name: name, type: type, images: [] },
           interviewScreen: { type: 'template' },
           requiredDocs: [],
       };
       const updatedProcesses = [...(company.onboardingProcesses || []), newProcess];
       handleFieldChange('onboardingProcesses', updatedProcesses);
+      setActiveProcessId(newProcess.id);
   };
   
   const handleRemoveProcess = (processId: string) => {
@@ -293,31 +292,13 @@ export default function SettingsPage() {
     });
   };
 
-  const handleGenerateForm = async () => {
-    if (!aiPrompt) {
-        toast({ variant: 'destructive', title: 'Prompt is empty', description: 'Please describe the form you want to generate.' });
-        return;
-    }
-    setIsGenerating(true);
-    setGeneratedForm(null);
-    try {
-        const result = await generateForm({ prompt: aiPrompt });
-        setGeneratedForm(result);
-        toast({ title: 'Form Generated!', description: 'The AI has suggested a form structure.' });
-    } catch (error) {
-        toast({ variant: 'destructive', title: 'Generation Failed', description: (error as Error).message });
-    } finally {
-        setIsGenerating(false);
-    }
-  };
-
   const [activeProcessId, setActiveProcessId] = useState<string | null>(company.onboardingProcesses?.[0]?.id || null);
 
   useEffect(() => {
-    if (company.onboardingProcesses && company.onboardingProcesses.length > 0) {
+    if (!activeProcessId && company.onboardingProcesses && company.onboardingProcesses.length > 0) {
       setActiveProcessId(company.onboardingProcesses[0].id);
     }
-  }, [company.onboardingProcesses]);
+  }, [company.onboardingProcesses, activeProcessId]);
 
   const activeProcess = company.onboardingProcesses?.find(p => p.id === activeProcessId);
 
@@ -369,8 +350,8 @@ export default function SettingsPage() {
                     </AlertDialog>
                     {showCompanyDetailsHint && (
                         <div className="flex items-center gap-2 animate-pulse ml-2">
-                           <ArrowRight className="h-5 w-5 text-primary -scale-x-100" />
                             <p className="text-sm font-medium text-primary">Click here first!</p>
+                            <ArrowRight className="h-5 w-5 text-primary -scale-x-100" />
                         </div>
                     )}
                 </div>
@@ -465,13 +446,16 @@ export default function SettingsPage() {
           <div className="md:col-span-1 space-y-2">
             <h3 className="font-semibold px-2">Available Forms</h3>
             <div className="flex flex-col gap-1">
-              <Button
-                variant={activeProcessId === company.onboardingProcesses?.[0]?.id ? "secondary" : "ghost"}
-                className="justify-start"
-                onClick={() => setActiveProcessId(company.onboardingProcesses?.[0]?.id || null)}
-              >
-                {company.onboardingProcesses?.[0]?.name || 'Custom Form 1'}
-              </Button>
+              {(company.onboardingProcesses || []).map(p => (
+                 <Button
+                    key={p.id}
+                    variant={activeProcessId === p.id ? "secondary" : "ghost"}
+                    className="justify-start"
+                    onClick={() => setActiveProcessId(p.id)}
+                 >
+                    {p.name}
+                 </Button>
+              ))}
               <Button variant="ghost" className="justify-start text-muted-foreground" disabled>Custom Form 2 <span className="text-xs ml-auto">(Available soon)</span></Button>
               <Button variant="ghost" className="justify-start text-muted-foreground" disabled>Custom Form 3 <span className="text-xs ml-auto">(Available soon)</span></Button>
               <Button variant="ghost" className="justify-start text-muted-foreground" disabled>Custom Form 4 <span className="text-xs ml-auto">(Available soon)</span></Button>
@@ -557,7 +541,7 @@ export default function SettingsPage() {
         <CardHeader>
             <div className="flex items-center gap-2">
                 <CardTitle className="flex items-center gap-2 text-xl"><Wand2 className="h-5 w-5 text-primary" /> AI-Powered Form Builder</CardTitle>
-                 <AlertDialog open={isAiBuilderDialogOpen} onOpenChange={setAiBuilderDialogOpen}>
+                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></Button>
                     </AlertDialogTrigger>
@@ -574,13 +558,25 @@ export default function SettingsPage() {
                     </AlertDialogContent>
                 </AlertDialog>
             </div>
-            <CardDescription>Generate a new form structure using AI.</CardDescription>
+            <CardDescription>Generate a new form structure using AI by answering a few questions.</CardDescription>
         </CardHeader>
         <CardContent>
-            <Button>
+            <Button onClick={() => setIsAiBuilderOpen(true)}>
                 <Wand2 className="mr-2 h-4 w-4" />
                 Start
             </Button>
+             <AiFormBuilderDialog 
+                isOpen={isAiBuilderOpen} 
+                onOpenChange={setIsAiBuilderOpen}
+                companyName={company.name}
+                onFormGenerated={(name) => {
+                    handleAddNewProcess(name, 'custom');
+                    toast({
+                        title: "AI Form Created!",
+                        description: `"${name}" has been added to your Form Library. You can now customize it.`
+                    });
+                }}
+             />
         </CardContent>
       </Card>
 
