@@ -136,8 +136,15 @@ function ApplicationViewContent() {
 
     const isCandidate = applicationData.status === 'candidate';
     const isInterview = applicationData.status === 'interview';
-    const isDocumentation = view === 'documentation';
+    const showDocumentation = view === 'documentation' || applicationData.status === 'new-hire' || applicationData.status === 'employee' || applicationData.status === 'inactive';
     
+    // Determine the default tab based on the current state
+    let defaultTab = "application";
+    if (showDocumentation) {
+        defaultTab = "documentation";
+    } else if (isInterview) {
+        defaultTab = "interview";
+    }
 
     return (
         <div className="space-y-4">
@@ -172,20 +179,20 @@ function ApplicationViewContent() {
 
             <ProgressTracker candidateId={candidateId} currentPhase={view} />
 
-            <Tabs defaultValue={isDocumentation ? "documentation" : isInterview ? "interview" : "application"} className="w-full">
+            <Tabs defaultValue={defaultTab} className="w-full">
                 <TabsList>
                     <TabsTrigger value="application"><FileText className="mr-2 h-4 w-4"/> Original Application</TabsTrigger>
-                    {isInterview || isDocumentation ? (
+                    {isInterview || showDocumentation ? (
                         <TabsTrigger value="interview"><MessageSquare className="mr-2 h-4 w-4"/> Interview Review</TabsTrigger>
                     ) : null}
-                    {isDocumentation ? (
+                    {showDocumentation ? (
                         <TabsTrigger value="documentation"><FileUp className="mr-2 h-4 w-4" /> Documentation</TabsTrigger>
                     ) : null}
                 </TabsList>
                 <TabsContent value="application">
                     <ApplicationView data={applicationData} />
                 </TabsContent>
-                {(isInterview || isDocumentation) && (
+                {(isInterview || showDocumentation) && (
                     <TabsContent value="interview">
                         <InterviewReviewForm 
                             candidateName={`${applicationData.firstName} ${applicationData.lastName}`} 
@@ -193,7 +200,7 @@ function ApplicationViewContent() {
                         />
                     </TabsContent>
                 )}
-                {isDocumentation && (
+                {showDocumentation && (
                     <TabsContent value="documentation">
                         <div className="space-y-4">
                             <DocumentationPhase candidateId={candidateId} />
@@ -218,5 +225,3 @@ export default function ApplicationViewPage() {
         </Suspense>
     )
 }
-
-    
