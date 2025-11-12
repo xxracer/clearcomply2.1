@@ -85,8 +85,8 @@ export default function CandidatesPage() {
 
     // When this page is visited, update the seen count
     localStorage.setItem('lastSeenCandidateCount', newApps.length.toString());
-    // Dispatch an event to notify the sidebar to re-check
-    window.dispatchEvent(new CustomEvent('new-candidates', { detail: { hasNew: false }}));
+    // Dispatch an event to notify the sidebar to re-check counts
+    window.dispatchEvent(new Event('candidates-viewed'));
 
   }, []);
 

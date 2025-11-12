@@ -18,19 +18,21 @@ export default function DashboardLayout({ children }: PropsWithChildren) {
 
   const checkNewCandidates = useCallback(async () => {
     try {
-      const newCandidates = await getNewCandidates();
-      const newCount = newCandidates.length;
+      const allNewCandidates = await getNewCandidates();
+      const totalCount = allNewCandidates.length;
 
       const lastSeenCount = parseInt(localStorage.getItem('lastSeenCandidateCount') || '0', 10);
+      const newUnseenCount = totalCount - lastSeenCount;
 
-      if (newCount > lastSeenCount) {
+      if (newUnseenCount > 0) {
         const audio = new Audio(notificationSound);
         audio.play().catch(e => console.error("Failed to play notification sound:", e));
-        // Dispatch custom event to update sidebar
-        window.dispatchEvent(new CustomEvent('new-candidates', { detail: { hasNew: true }}));
-      } else {
-        window.dispatchEvent(new CustomEvent('new-candidates', { detail: { hasNew: false }}));
       }
+      
+      // Dispatch custom event to update sidebar with detailed counts
+      window.dispatchEvent(new CustomEvent('candidate-update', { 
+        detail: { newUnseenCount, totalCount }
+      }));
 
     } catch (error) {
       console.error("Error checking for new candidates:", error);
@@ -46,6 +48,9 @@ export default function DashboardLayout({ children }: PropsWithChildren) {
     
     // Also listen for our custom event that signals a data refresh
     window.addEventListener('data-reset', checkNewCandidates);
+    
+    // Listen for when candidates page is visited to re-check
+    window.addEventListener('candidates-viewed', checkNewCandidates);
 
     // Also poll periodically as a fallback
     const intervalId = setInterval(checkNewCandidates, 15000); // Check every 15 seconds
@@ -54,6 +59,7 @@ export default function DashboardLayout({ children }: PropsWithChildren) {
     return () => {
       window.removeEventListener('storage', checkNewCandidates);
       window.removeEventListener('data-reset', checkNewCandidates);
+      window.removeEventListener('candidates-viewed', checkNewCandidates);
       clearInterval(intervalId);
     };
   }, [checkNewCandidates]);

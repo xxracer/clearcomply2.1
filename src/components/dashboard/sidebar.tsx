@@ -10,6 +10,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarSeparator,
+  SidebarMenuBadge,
 } from "@/components/ui/sidebar";
 import {
   ClipboardCheck,
@@ -27,32 +28,48 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useTransition } from "react";
 import { checkForExpiringDocuments } from "@/app/actions/client-actions";
+import { cn } from "@/lib/utils";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const [showAlert, setShowAlert] = useState(false);
+  const [showDocAlert, setShowDocAlert] = useState(false);
+  const [candidateCounts, setCandidateCounts] = useState({ newUnseenCount: 0, totalCount: 0 });
+  const [isPending, startTransition] = useTransition();
 
-  const checkDocs = useCallback(async () => {
+  const checkDocAlert = useCallback(async () => {
     const hasExpiring = await checkForExpiringDocuments();
-    setShowAlert(hasExpiring);
+    setShowDocAlert(hasExpiring);
+  }, []);
+
+  const handleCandidateUpdate = useCallback((event: Event) => {
+    const customEvent = event as CustomEvent<{ newUnseenCount: number; totalCount: number }>;
+    setCandidateCounts(customEvent.detail);
   }, []);
 
   useEffect(() => {
-    checkDocs();
+    startTransition(() => {
+      checkDocAlert();
+    });
     
-    // Listen for a custom event dispatched on storage changes
-    const handleStorageChange = () => checkDocs();
-    window.addEventListener('storage', handleStorageChange);
-    
-    const interval = setInterval(checkDocs, 5 * 60 * 1000); // Poll every 5 minutes
+    window.addEventListener('storage', checkDocAlert);
+    window.addEventListener('data-reset', checkDocAlert);
+    window.addEventListener('candidate-update', handleCandidateUpdate);
+
+    const interval = setInterval(() => {
+        startTransition(() => {
+            checkDocAlert();
+        });
+    }, 30 * 1000); // Poll every 30 seconds
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('storage', checkDocAlert);
+      window.removeEventListener('data-reset', checkDocAlert);
+      window.removeEventListener('candidate-update', handleCandidateUpdate);
       clearInterval(interval);
     };
-  }, [pathname, checkDocs]);
+  }, [pathname, checkDocAlert, handleCandidateUpdate]);
 
   return (
     <Sidebar>
@@ -85,6 +102,11 @@ export function DashboardSidebar() {
               <Link href="/dashboard/candidates">
                 <Users />
                 <span>Candidates</span>
+                {candidateCounts.newUnseenCount > 0 ? (
+                  <SidebarMenuBadge className="bg-red-500 text-white">{candidateCounts.newUnseenCount}</SidebarMenuBadge>
+                ) : candidateCounts.totalCount > 0 ? (
+                  <SidebarMenuBadge>{candidateCounts.totalCount}</SidebarMenuBadge>
+                ) : null}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -123,7 +145,7 @@ export function DashboardSidebar() {
                     <FileClock />
                     <span>Expiring Docs</span>
                 </div>
-                {showAlert && <AlertTriangle className="h-4 w-4 text-yellow-400 animate-pulse" />}
+                {showDocAlert && <AlertTriangle className="h-4 w-4 text-yellow-400 animate-pulse" />}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
