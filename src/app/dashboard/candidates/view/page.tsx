@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { type ApplicationData } from "@/lib/schemas";
-import { Briefcase, Printer, UserCheck, UserSearch, MessageSquare, UserX, FileText } from "lucide-react";
+import { Briefcase, Printer, UserCheck, UserSearch, MessageSquare, UserX, FileText, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useCallback, Suspense } from "react";
 import { InterviewReviewForm } from "@/components/dashboard/interview-review-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProgressTracker } from "@/components/dashboard/progress-tracker";
+import { DocumentationPhase } from "@/components/dashboard/documentation-phase";
 
 
 function ApplicationViewContent() {
@@ -23,12 +25,16 @@ function ApplicationViewContent() {
 
     const [applicationData, setApplicationData] = useState<ApplicationData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [view, setView] = useState<'application' | 'documentation'>('application');
 
     const loadData = useCallback(async () => {
         if (candidateId) {
             setLoading(true);
             const data = await getCandidate(candidateId);
             setApplicationData(data);
+            if (data?.status === 'new-hire' || data?.status === 'employee' || data?.status === 'inactive') {
+                setView('documentation');
+            }
             setLoading(false);
         } else {
             setLoading(false);
@@ -57,7 +63,7 @@ function ApplicationViewContent() {
             () => updateCandidateStatus(id, 'interview'),
             () => {
                 toast({ title: "Candidate Updated", description: "Moved to interview phase."});
-                router.push('/dashboard/candidates');
+                loadData(); // Reload data to show updated view
             },
             "Error setting to interview"
         );
@@ -77,6 +83,11 @@ function ApplicationViewContent() {
         }
     }
 
+    const handleMoveToDocumentation = () => {
+        toast({ title: "Interview Reviewed", description: "You can now proceed to the documentation phase." });
+        setView('documentation');
+    }
+
     const handleMarkAsNewHire = (id: string) => {
         handleAction(
             () => updateCandidateStatus(id, 'new-hire'),
@@ -88,14 +99,6 @@ function ApplicationViewContent() {
         );
     }
 
-    const handleMarkAsEmployee = (id: string) => {
-        handleAction(
-            () => updateCandidateStatus(id, 'employee'),
-            () => router.push('/dashboard/employees'),
-            "Error marking as employee"
-        );
-    }
-
     if (loading) {
         return (
             <div className="flex flex-1 items-center justify-center">
@@ -104,7 +107,7 @@ function ApplicationViewContent() {
         );
     }
     
-    if (!applicationData) {
+    if (!candidateId || !applicationData) {
         return (
             <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm h-full">
                 <Card className="w-full max-w-lg text-center">
@@ -128,16 +131,25 @@ function ApplicationViewContent() {
     }
 
     const isCandidate = applicationData.status === 'candidate';
-    const isNewHire = applicationData.status === 'new-hire';
-    const isEmployee = applicationData.status === 'employee';
     const isInterview = applicationData.status === 'interview';
+    const isReadyForDocumentation = view === 'documentation';
+    
+    let currentPhase: "application" | "interview" | "documentation" = "application";
+    if (isInterview) currentPhase = "interview";
+    if (isReadyForDocumentation) currentPhase = "documentation";
+    
 
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-headline font-bold text-foreground">
-                    Viewing Application: {applicationData.firstName} {applicationData.lastName}
-                </h1>
+                <div>
+                     <Button variant="ghost" asChild>
+                        <Link href="/dashboard/candidates"><ChevronLeft className="mr-2 h-4 w-4" /> Back to Candidates</Link>
+                    </Button>
+                    <h1 className="text-3xl font-headline font-bold text-foreground">
+                        {applicationData.firstName} {applicationData.lastName}
+                    </h1>
+                </div>
                 <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={() => window.print()}>
                         <Printer className="mr-2 h-4 w-4" />
@@ -155,18 +167,20 @@ function ApplicationViewContent() {
                             </Button>
                         </>
                     )}
-                    {isNewHire && (
-                        <Button onClick={() => handleMarkAsEmployee(applicationData.id)}>
-                            <Briefcase className="mr-2 h-4 w-4" />
-                            Mark as Employee
+                     {isReadyForDocumentation && (
+                        <Button onClick={() => handleMarkAsNewHire(applicationData.id)}>
+                            <UserCheck className="mr-2 h-4 w-4" />
+                            Mark as New Hire
                         </Button>
                     )}
-                    <Button asChild variant="outline">
-                        {isEmployee ? <Link href="/dashboard/employees">Back to Employees</Link> : isNewHire ? <Link href="/dashboard/new-hires">Back to New Hires</Link> : <Link href="/dashboard/candidates">Back to Candidates</Link>}
-                    </Button>
                 </div>
             </div>
-             {isInterview ? (
+
+            <ProgressTracker candidateId={candidateId} currentPhase={currentPhase} />
+
+            {isReadyForDocumentation ? (
+                 <DocumentationPhase candidateId={candidateId} />
+            ) : isInterview ? (
                 <Tabs defaultValue="application">
                     <TabsList>
                         <TabsTrigger value="application"><FileText className="mr-2 h-4 w-4"/> Original Application</TabsTrigger>
@@ -178,7 +192,7 @@ function ApplicationViewContent() {
                     <TabsContent value="interview">
                         <InterviewReviewForm 
                             candidateName={`${applicationData.firstName} ${applicationData.lastName}`} 
-                            onMoveToDocumentation={() => handleMarkAsNewHire(applicationData.id)}
+                            onMoveToDocumentation={handleMoveToDocumentation}
                         />
                     </TabsContent>
                 </Tabs>

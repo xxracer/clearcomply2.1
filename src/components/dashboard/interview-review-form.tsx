@@ -76,6 +76,9 @@ export function InterviewReviewForm({ candidateName, onMoveToDocumentation }: In
   }, [candidateName, form]);
 
   function onSubmit(data: InterviewReviewSchema) {
+    // In a real app, you'd save this data.
+    // For this demo, we just show a toast and change the state.
+    console.log("Interview Review Data:", data);
     toast({
       title: "Interview Review Submitted",
       description: "The review has been saved. You can now move the candidate to the next phase.",

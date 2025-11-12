@@ -49,7 +49,7 @@ export function DocumentationPhase({ candidateId }: { candidateId: string}) {
 
         // Find the process this candidate might be associated with
         const process = currentCompany.onboardingProcesses?.find(p => candidate?.applyingFor.includes(p.name));
-        setRequiredDocs(process?.requiredDocs || currentCompany.requiredDocs || []);
+        setRequiredDocs(process?.requiredDocs || []);
     }
 
   }, [candidateId, candidate?.applyingFor]);
