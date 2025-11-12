@@ -1,12 +1,12 @@
 
 'use client';
 
-import { getCandidate, updateCandidateStatus, deleteCandidate } from "@/app/actions/client-actions";
+import { getCandidate, updateCandidateStatus, deleteCandidate, updateCandidateWithInterviewReview } from "@/app/actions/client-actions";
 import { ApplicationView } from "@/components/dashboard/application-view";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { type ApplicationData } from "@/lib/schemas";
+import { type ApplicationData, type InterviewReviewSchema } from "@/lib/schemas";
 import { Briefcase, Printer, UserCheck, UserSearch, MessageSquare, UserX, FileText, ChevronLeft, FileUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -25,17 +25,17 @@ function ApplicationViewContent() {
 
     const [applicationData, setApplicationData] = useState<ApplicationData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [interviewSubmitted, setInterviewSubmitted] = useState(false);
+    const [isInterviewSubmitted, setIsInterviewSubmitted] = useState(false);
 
     const loadData = useCallback(async () => {
         if (candidateId) {
             setLoading(true);
             const data = await getCandidate(candidateId);
             setApplicationData(data);
-            // If we are loading a candidate that is past the interview phase,
-            // we can assume the interview form part is "done"
-            if (data && (data.status === 'new-hire' || data.status === 'employee' || data.status === 'inactive')) {
-                setInterviewSubmitted(true);
+            if (data?.interviewReview) {
+                setIsInterviewSubmitted(true);
+            } else {
+                setIsInterviewSubmitted(false);
             }
             setLoading(false);
         } else {
@@ -85,10 +85,17 @@ function ApplicationViewContent() {
         }
     }
     
-    const handleInterviewSubmit = () => {
-        // This is called when the interview form is submitted successfully
-        toast({ title: "Interview Reviewed", description: "You can now proceed to the documentation phase." });
-        setInterviewSubmitted(true); // This will now reveal the Documentation tab trigger.
+    const handleInterviewSubmit = (reviewData: InterviewReviewSchema) => {
+        if (!candidateId) return;
+        handleAction(
+            () => updateCandidateWithInterviewReview(candidateId, reviewData),
+            () => {
+                toast({ title: "Interview Reviewed", description: "You can now proceed to the documentation phase." });
+                setIsInterviewSubmitted(true);
+                loadData();
+            },
+            "Error saving interview review"
+        );
     }
 
 
@@ -185,9 +192,9 @@ function ApplicationViewContent() {
                     { (isInterviewPhase || isDocumentationPhase) && (
                         <TabsTrigger value="interview"><MessageSquare className="mr-2 h-4 w-4"/> Interview Review</TabsTrigger>
                     )}
-                    { (isDocumentationPhase || (isInterviewPhase && interviewSubmitted)) && (
+                    { isDocumentationPhase || isInterviewSubmitted ? (
                         <TabsTrigger value="documentation"><FileUp className="mr-2 h-4 w-4" /> Documentation</TabsTrigger>
-                    )}
+                    ) : null}
                 </TabsList>
                 <TabsContent value="application">
                     <ApplicationView data={applicationData} />
@@ -197,11 +204,12 @@ function ApplicationViewContent() {
                         <InterviewReviewForm 
                             candidateName={`${applicationData.firstName} ${applicationData.lastName}`} 
                             onReviewSubmit={handleInterviewSubmit}
-                            isAlreadySubmitted={interviewSubmitted}
+                            isAlreadySubmitted={isInterviewSubmitted}
+                            reviewData={applicationData.interviewReview}
                         />
                     </TabsContent>
                 )}
-                { (isDocumentationPhase || (isInterviewPhase && interviewSubmitted)) && (
+                { (isDocumentationPhase || isInterviewSubmitted) && (
                     <TabsContent value="documentation">
                         <div className="space-y-4">
                             <DocumentationPhase candidateId={candidateId} />

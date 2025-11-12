@@ -13,7 +13,6 @@ export interface DocumentFile {
   url: string; // This will now be a data URI
 }
 
-
 const educationEntrySchema = z.object({
   name: z.string().optional(),
   location: z.string().optional(),
@@ -135,6 +134,24 @@ export const applicationSchema = z.object({
 export type ApplicationSchema = z.infer<typeof applicationSchema>;
 
 
+export const interviewReviewSchema = z.object({
+    applicantName: z.string().min(1, "Applicant name is required"),
+    date: z.date({ required_error: "Date is required." }),
+    daysAvailable: z.array(z.string()).optional(),
+    personality: z.enum(["friendly", "average", "quiet"]).optional(),
+    verbalSkills: z.enum(["excellent", "average", "poor"]).optional(),
+    communicates: z.enum(["clear", "somewhat clear", "not very clear"]).optional(),
+    flexibility: z.enum(["very flexible", "somewhat", "not flexible"]).optional(),
+    skillLevel: z.enum(["higher skilled", "moderately skilled", "lower skilled"]).optional(),
+    appearance: z.enum(["professional", "semi-professional", "not professional"]).optional(),
+    goodCandidate: z.enum(["yes", "no"]).optional(),
+    overallInterview: z.string().min(1, "Overall interview summary is required."),
+    interviewer: z.string().min(1, "Interviewer name is required"),
+    interviewerDate: z.date({ required_error: "Interviewer date is required." }),
+});
+
+export type InterviewReviewSchema = z.infer<typeof interviewReviewSchema>;
+
 // This is the type for the data that will be stored in localStorage
 export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'driversLicense'> & {
     id: string;
@@ -159,25 +176,9 @@ export type ApplicationData = Omit<ApplicationSchema, 'resume' | 'driversLicense
       reason: string;
       description: string;
     };
+    interviewReview?: InterviewReviewSchema;
 };
 
-export const interviewReviewSchema = z.object({
-    applicantName: z.string().min(1, "Applicant name is required"),
-    date: z.date({ required_error: "Date is required." }),
-    daysAvailable: z.array(z.string()),
-    personality: z.enum(["friendly", "average", "quiet"]),
-    verbalSkills: z.enum(["excellent", "average", "poor"]),
-    communicates: z.enum(["clear", "somewhat clear", "not very clear"]),
-    flexibility: z.enum(["very flexible", "somewhat", "not flexible"]),
-    skillLevel: z.enum(["higher skilled", "moderately skilled", "lower skilled"]),
-    appearance: z.enum(["professional", "semi-professional", "not professional"]),
-    goodCandidate: z.enum(["yes", "no"]),
-    overallInterview: z.string().min(1, "Overall interview summary is required."),
-    interviewer: z.string().min(1, "Interviewer name is required"),
-    interviewerDate: z.date({ required_error: "Interviewer date is required." }),
-});
-
-export type InterviewReviewSchema = z.infer<typeof interviewReviewSchema>;
 
 const requiredDocUpload = z.any()
   .refine((file): file is File => file instanceof File, "File is required.")

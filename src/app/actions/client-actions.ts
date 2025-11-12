@@ -2,7 +2,7 @@
 'use client';
 
 import { generateId } from "@/lib/local-storage-client";
-import { type ApplicationData, type ApplicationSchema } from "@/lib/schemas";
+import { type ApplicationData, type ApplicationSchema, type InterviewReviewSchema } from "@/lib/schemas";
 
 // This file now acts as a client-side API for interacting with localStorage.
 
@@ -169,6 +169,24 @@ export async function updateCandidateWithFileUpload(id: string, file: File, titl
          console.error("Error updating with file upload: ", error);
         return { success: false, error: (error as Error).message || "Failed to update candidate." };
      }
+}
+
+export async function updateCandidateWithInterviewReview(id: string, reviewData: InterviewReviewSchema): Promise<{ success: boolean; error?: string }> {
+    try {
+        const candidates = getAllFromStorage();
+        const index = candidates.findIndex(c => c.id === id);
+
+        if (index > -1) {
+            candidates[index].interviewReview = reviewData;
+            saveAllToStorage(candidates);
+        } else {
+            throw new Error("Could not find candidate to update.");
+        }
+        return { success: true };
+    } catch (error) {
+        console.error("Error saving interview review: ", error);
+        return { success: false, error: (error as Error).message || "Failed to save interview review." };
+    }
 }
 
 

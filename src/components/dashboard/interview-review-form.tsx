@@ -5,15 +5,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, UserCheck } from "lucide-react";
-import { useState, useEffect } from "react";
+import { CalendarIcon } from "lucide-react";
+import { useEffect } from "react";
 
 
 import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -36,7 +35,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "../ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "../ui/textarea";
 
 const daysOfWeek = [
@@ -51,18 +49,19 @@ const daysOfWeek = [
 
 type InterviewReviewFormProps = {
     candidateName: string;
-    onReviewSubmit: () => void;
+    onReviewSubmit: (data: InterviewReviewSchema) => void;
     isAlreadySubmitted: boolean;
+    reviewData?: InterviewReviewSchema;
 };
 
 
-export function InterviewReviewForm({ candidateName, onReviewSubmit, isAlreadySubmitted }: InterviewReviewFormProps) {
-  const { toast } = useToast();
+export function InterviewReviewForm({ candidateName, onReviewSubmit, isAlreadySubmitted, reviewData }: InterviewReviewFormProps) {
 
   const form = useForm<InterviewReviewSchema>({
     resolver: zodResolver(interviewReviewSchema),
     defaultValues: {
-      applicantName: "",
+      applicantName: candidateName,
+      date: new Date(),
       daysAvailable: [],
       interviewer: "",
       overallInterview: "",
@@ -70,15 +69,19 @@ export function InterviewReviewForm({ candidateName, onReviewSubmit, isAlreadySu
   });
 
   useEffect(() => {
-    if (candidateName) {
-        form.setValue("applicantName", candidateName);
+    if (reviewData) {
+      form.reset({
+        ...reviewData,
+        date: new Date(reviewData.date),
+        interviewerDate: new Date(reviewData.interviewerDate),
+      });
+    } else {
+       form.setValue("applicantName", candidateName);
     }
-  }, [candidateName, form]);
+  }, [candidateName, reviewData, form]);
 
   function onSubmit(data: InterviewReviewSchema) {
-    // In a real app, you'd save this data.
-    console.log("Interview Review Data:", data);
-    onReviewSubmit();
+    onReviewSubmit(data);
   }
 
   const renderRadioGroup = (name: keyof InterviewReviewSchema, options: string[]) => (
@@ -90,7 +93,7 @@ export function InterviewReviewForm({ candidateName, onReviewSubmit, isAlreadySu
           <FormControl>
             <RadioGroup
               onValueChange={field.onChange}
-              defaultValue={field.value as string}
+              value={field.value as string}
               className="flex flex-col space-y-1 sm:flex-row sm:space-y-0 sm:space-x-8"
               disabled={isAlreadySubmitted}
             >
