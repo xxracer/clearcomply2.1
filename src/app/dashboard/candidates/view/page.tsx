@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { type ApplicationData } from "@/lib/schemas";
-import { Briefcase, Printer, UserCheck, UserSearch, MessageSquare, UserX, FileText, ChevronLeft } from "lucide-react";
+import { Briefcase, Printer, UserCheck, UserSearch, MessageSquare, UserX, FileText, ChevronLeft, FileUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useCallback, Suspense } from "react";
@@ -25,7 +25,7 @@ function ApplicationViewContent() {
 
     const [applicationData, setApplicationData] = useState<ApplicationData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [view, setView] = useState<'application' | 'documentation'>('application');
+    const [view, setView] = useState<'application' | 'interview' | 'documentation'>('application');
 
     const loadData = useCallback(async () => {
         if (candidateId) {
@@ -34,6 +34,10 @@ function ApplicationViewContent() {
             setApplicationData(data);
             if (data?.status === 'new-hire' || data?.status === 'employee' || data?.status === 'inactive') {
                 setView('documentation');
+            } else if (data?.status === 'interview') {
+                setView('interview');
+            } else {
+                setView('application');
             }
             setLoading(false);
         } else {
@@ -63,7 +67,7 @@ function ApplicationViewContent() {
             () => updateCandidateStatus(id, 'interview'),
             () => {
                 toast({ title: "Candidate Updated", description: "Moved to interview phase."});
-                loadData(); // Reload data to show updated view
+                loadData();
             },
             "Error setting to interview"
         );
@@ -132,11 +136,7 @@ function ApplicationViewContent() {
 
     const isCandidate = applicationData.status === 'candidate';
     const isInterview = applicationData.status === 'interview';
-    const isReadyForDocumentation = view === 'documentation';
-    
-    let currentPhase: "application" | "interview" | "documentation" = "application";
-    if (isInterview) currentPhase = "interview";
-    if (isReadyForDocumentation) currentPhase = "documentation";
+    const isDocumentation = view === 'documentation';
     
 
     return (
@@ -167,38 +167,46 @@ function ApplicationViewContent() {
                             </Button>
                         </>
                     )}
-                     {isReadyForDocumentation && (
-                        <Button onClick={() => handleMarkAsNewHire(applicationData.id)}>
-                            <UserCheck className="mr-2 h-4 w-4" />
-                            Mark as New Hire
-                        </Button>
-                    )}
                 </div>
             </div>
 
-            <ProgressTracker candidateId={candidateId} currentPhase={currentPhase} />
+            <ProgressTracker candidateId={candidateId} currentPhase={view} />
 
-            {isReadyForDocumentation ? (
-                 <DocumentationPhase candidateId={candidateId} />
-            ) : isInterview ? (
-                <Tabs defaultValue="application">
-                    <TabsList>
-                        <TabsTrigger value="application"><FileText className="mr-2 h-4 w-4"/> Original Application</TabsTrigger>
+            <Tabs defaultValue={isDocumentation ? "documentation" : isInterview ? "interview" : "application"} className="w-full">
+                <TabsList>
+                    <TabsTrigger value="application"><FileText className="mr-2 h-4 w-4"/> Original Application</TabsTrigger>
+                    {isInterview || isDocumentation ? (
                         <TabsTrigger value="interview"><MessageSquare className="mr-2 h-4 w-4"/> Interview Review</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="application">
-                        <ApplicationView data={applicationData} />
-                    </TabsContent>
+                    ) : null}
+                    {isDocumentation ? (
+                        <TabsTrigger value="documentation"><FileUp className="mr-2 h-4 w-4" /> Documentation</TabsTrigger>
+                    ) : null}
+                </TabsList>
+                <TabsContent value="application">
+                    <ApplicationView data={applicationData} />
+                </TabsContent>
+                {(isInterview || isDocumentation) && (
                     <TabsContent value="interview">
                         <InterviewReviewForm 
                             candidateName={`${applicationData.firstName} ${applicationData.lastName}`} 
                             onMoveToDocumentation={handleMoveToDocumentation}
                         />
                     </TabsContent>
-                </Tabs>
-            ) : (
-                <ApplicationView data={applicationData} />
-            )}
+                )}
+                {isDocumentation && (
+                    <TabsContent value="documentation">
+                        <div className="space-y-4">
+                            <DocumentationPhase candidateId={candidateId} />
+                             <div className="flex justify-end pt-4">
+                                <Button onClick={() => handleMarkAsNewHire(applicationData.id)}>
+                                    <UserCheck className="mr-2 h-4 w-4" />
+                                    Mark as New Hire
+                                </Button>
+                            </div>
+                        </div>
+                    </TabsContent>
+                )}
+            </Tabs>
         </div>
     );
 }
@@ -210,3 +218,5 @@ export default function ApplicationViewPage() {
         </Suspense>
     )
 }
+
+    
