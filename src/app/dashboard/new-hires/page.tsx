@@ -2,6 +2,7 @@
 'use client'
 
 import { getNewHires } from "@/app/actions/client-actions";
+import { getCompanies } from "@/app/actions/company-actions";
 import { CandidatesActions } from "@/app/dashboard/candidates/_components/candidates-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { AlertTriangle, UserCheck, Mail, Info } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Company } from "@/lib/company-schemas";
 
 // Helper to convert string to JS Date
 function toDate(dateString: string | Date | undefined): Date | null {
@@ -35,14 +37,21 @@ const isLicenseExpiringSoon = (expirationDate: any): boolean => {
 
 export default function NewHiresPage() {
   const [newHires, setNewHires] = useState<ApplicationData[]>([]);
+  const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
 
   const fetchNewHires = useCallback(async () => {
     setLoading(true);
-    const data = await getNewHires();
+    const [data, companies] = await Promise.all([
+        getNewHires(),
+        getCompanies()
+    ]);
     setNewHires(data);
+    if (companies && companies.length > 0) {
+        setCompany(companies[0]);
+    }
     setLoading(false);
   }, []);
 
@@ -56,13 +65,24 @@ export default function NewHiresPage() {
   }, [fetchNewHires]);
 
   const handleRenewLicense = (candidate: ApplicationData) => {
+    // Find the first process ID available to build a valid link.
+    const processId = company?.onboardingProcesses?.[0]?.id;
+
+    if (!processId) {
+        toast({
+            variant: "destructive",
+            title: "Configuration Error",
+            description: "No onboarding process is configured to generate a documentation link.",
+        });
+        return;
+    }
+
     toast({
       title: "Email Simulation",
       description: `An email has been sent to ${candidate.firstName} with a link to renew their license documentation.`,
     });
 
-    const companyId = candidate.applyingFor[0]?.toLowerCase().replace(/\s+/g, '-') || 'default';
-    const renewalLink = `${window.location.origin}/documentation?company=${companyId}&candidateId=${candidate.id}`;
+    const renewalLink = `${window.location.origin}/documentation?processId=${processId}&candidateId=${candidate.id}`;
     navigator.clipboard.writeText(renewalLink);
     
     toast({

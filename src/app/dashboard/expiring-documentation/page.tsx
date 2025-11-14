@@ -1,7 +1,7 @@
 
 'use client'
 
-import { getPersonnel, updateCandidateLicense } from "@/app/actions/client-actions";
+import { getPersonnel, updateCandidateLicense, getCompanies } from "@/app/actions/client-actions";
 import { CandidatesActions } from "@/app/dashboard/candidates/_components/candidates-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { Company } from "@/lib/company-schemas";
 
 // Helper to convert string to JS Date
 function toDate(dateString: string | Date | undefined): Date | null {
@@ -125,6 +126,7 @@ function UpdateLicenseDialog({ person, onLicenseUpdated }: { person: Application
 
 export default function ExpiringDocumentationPage() {
   const [expiringPersonnel, setExpiringPersonnel] = useState<ApplicationData[]>([]);
+  const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
@@ -132,9 +134,15 @@ export default function ExpiringDocumentationPage() {
 
   const fetchPersonnel = useCallback(async () => {
     setLoading(true);
-    const data = await getPersonnel();
+    const [data, companies] = await Promise.all([
+        getPersonnel(),
+        getCompanies()
+    ]);
     const filteredData = data.filter(p => isLicenseExpiringSoon(p.driversLicenseExpiration));
     setExpiringPersonnel(filteredData);
+    if (companies && companies.length > 0) {
+        setCompany(companies[0]);
+    }
     setLoading(false);
   }, []);
 
@@ -148,13 +156,23 @@ export default function ExpiringDocumentationPage() {
   }, [fetchPersonnel]);
 
   const handleRenewLicense = (candidate: ApplicationData) => {
+    const processId = company?.onboardingProcesses?.[0]?.id;
+
+    if (!processId) {
+        toast({
+            variant: "destructive",
+            title: "Configuration Error",
+            description: "No onboarding process is configured to generate a documentation link.",
+        });
+        return;
+    }
+
     toast({
       title: "Email Simulation",
       description: `An email has been sent to ${candidate.firstName} with a link to renew their license documentation.`,
     });
 
-    const companyId = candidate.applyingFor?.[0]?.toLowerCase().replace(/\s+/g, '-') || 'default';
-    const renewalLink = `${window.location.origin}/documentation?company=${companyId}&candidateId=${candidate.id}`;
+    const renewalLink = `${window.location.origin}/documentation?processId=${processId}&candidateId=${candidate.id}`;
     navigator.clipboard.writeText(renewalLink);
     
     toast({
