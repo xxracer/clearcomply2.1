@@ -25,14 +25,16 @@ function ApplicationViewContent() {
 
     const [applicationData, setApplicationData] = useState<ApplicationData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [isInterviewSubmitted, setIsInterviewSubmitted] = useState(false);
     const [activeTab, setActiveTab] = useState("application");
+    const [isInterviewSubmitted, setIsInterviewSubmitted] = useState(false);
+
 
     const loadData = useCallback(async () => {
         if (candidateId) {
             setLoading(true);
             const data = await getCandidate(candidateId);
             setApplicationData(data);
+            
             if (data?.interviewReview) {
                 setIsInterviewSubmitted(true);
             } else {
@@ -53,6 +55,7 @@ function ApplicationViewContent() {
             setLoading(false);
         }
     }, [candidateId]);
+
 
     useEffect(() => {
         loadData();
@@ -96,15 +99,16 @@ function ApplicationViewContent() {
         }
     }
     
-    const handleInterviewSubmit = (reviewData: InterviewReviewSchema) => {
+    const handleInterviewSubmit = async (reviewData: InterviewReviewSchema) => {
         if (!candidateId) return;
-        handleAction(
+
+        await handleAction(
             () => updateCandidateWithInterviewReview(candidateId, reviewData),
-            () => {
+            async () => {
                 toast({ title: "Interview Reviewed", description: "You can now proceed to the documentation phase." });
-                setIsInterviewSubmitted(true);
-                loadData();
-                setActiveTab("documentation"); // Switch to documentation tab
+                // Reload data to get the updated review status, then switch tab
+                await loadData();
+                setActiveTab("documentation");
             },
             "Error saving interview review"
         );
@@ -155,7 +159,7 @@ function ApplicationViewContent() {
 
     const isCandidatePhase = applicationData.status === 'candidate';
     const isInterviewPhase = applicationData.status === 'interview';
-    const isDocumentationPhase = applicationData.status === 'new-hire' || applicationData.status === 'employee' || applicationData.status === 'inactive';
+    const isDocumentationPhase = ['new-hire', 'employee', 'inactive'].includes(applicationData.status!);
     
     return (
         <div className="space-y-4">
@@ -196,36 +200,38 @@ function ApplicationViewContent() {
                     { (isInterviewPhase || isDocumentationPhase || isInterviewSubmitted) && (
                         <TabsTrigger value="interview"><MessageSquare className="mr-2 h-4 w-4"/> Interview Review</TabsTrigger>
                     )}
-                    { (isDocumentationPhase || isInterviewSubmitted) ? (
+                    { (isDocumentationPhase || isInterviewSubmitted) && (
                         <TabsTrigger value="documentation"><FileUp className="mr-2 h-4 w-4" /> Documentation</TabsTrigger>
-                    ) : null}
+                    )}
                 </TabsList>
                 <TabsContent value="application">
                     <ApplicationView data={applicationData} />
                 </TabsContent>
-                { (isInterviewPhase || isDocumentationPhase || isInterviewSubmitted) && (
-                    <TabsContent value="interview">
+                
+                <TabsContent value="interview">
+                    { (isInterviewPhase || isDocumentationPhase || isInterviewSubmitted) && (
                         <InterviewReviewForm 
                             candidateName={`${applicationData.firstName} ${applicationData.lastName}`} 
                             onReviewSubmit={handleInterviewSubmit}
                             isAlreadySubmitted={isInterviewSubmitted}
                             reviewData={applicationData.interviewReview}
                         />
-                    </TabsContent>
-                )}
-                { (isDocumentationPhase || isInterviewSubmitted) && (
-                    <TabsContent value="documentation">
+                    )}
+                </TabsContent>
+                
+                <TabsContent value="documentation">
+                    { (isDocumentationPhase || isInterviewSubmitted) && (
                         <div className="space-y-4">
                             <DocumentationPhase candidateId={candidateId} />
                             <div className="flex justify-end pt-4">
-                                <Button onClick={() => handleMarkAsNewHire(applicationData.id)} disabled={applicationData.status !== 'interview'}>
+                                <Button onClick={() => handleMarkAsNewHire(applicationData.id)} disabled={applicationData.status === 'new-hire' || applicationData.status === 'employee' || applicationData.status === 'inactive'}>
                                     <UserCheck className="mr-2 h-4 w-4" />
                                     Mark as New Hire
                                 </Button>
                             </div>
                         </div>
-                    </TabsContent>
-                )}
+                    )}
+                </TabsContent>
             </Tabs>
         </div>
     );
@@ -238,3 +244,5 @@ export default function ApplicationViewPage() {
         </Suspense>
     )
 }
+
+    
