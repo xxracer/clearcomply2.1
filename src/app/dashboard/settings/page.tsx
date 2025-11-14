@@ -25,6 +25,8 @@ import { ApplicationForm } from "@/components/dashboard/application-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { generateForm } from "@/ai/flows/generate-form-flow";
+import { AiFormField } from "@/lib/company-schemas";
 
 
 // Main component for the settings page
@@ -38,6 +40,9 @@ export default function SettingsPage() {
 
   // AI Form Builder state
   const [isAiBuilderOpen, setIsAiBuilderOpen] = useState(false);
+  const [aiBuilderMode, setAiBuilderMode] = useState<'wizard' | 'prompt'>('wizard');
+  const [prompt, setPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // State for alert dialogs
   const [isCompanyDetailsDialogOpen, setCompanyDetailsDialogOpen] = useState(false);
@@ -164,7 +169,7 @@ export default function SettingsPage() {
       });
   }
 
-  const handleAddNewProcess = (name: string, fields: AppFormType['fields']) => {
+  const handleAddNewProcess = (name: string, fields: AiFormField[]) => {
       const newProcess: OnboardingProcess = {
           id: generateIdForServer(),
           name: name,
@@ -177,6 +182,27 @@ export default function SettingsPage() {
       setActiveProcessId(newProcess.id);
   };
   
+    const handleGenerateFromPrompt = async () => {
+        if (!prompt) {
+            toast({ variant: 'destructive', title: 'Prompt is empty', description: 'Please describe the form you want to create.' });
+            return;
+        }
+        setIsGenerating(true);
+        try {
+            const result = await generateForm({ prompt });
+            handleAddNewProcess(result.formName, result.fields);
+            toast({
+                title: 'Form Generated!',
+                description: `"${result.formName}" has been added to your Form Library.`,
+            });
+            setPrompt('');
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Generation Failed', description: (error as Error).message });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
 
   const handleSave = () => {
     startTransition(async () => {
@@ -444,7 +470,7 @@ export default function SettingsPage() {
                   </div>
                  )}
                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsAiBuilderOpen(true)}>
+                    <Button variant="outline" onClick={() => { setAiBuilderMode('wizard'); setIsAiBuilderOpen(true);}}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Add New Process
                     </Button>
@@ -464,32 +490,116 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-            <div className="flex items-center gap-2">
-                <CardTitle className="flex items-center gap-2 text-xl"><Wand2 className="h-5 w-5 text-primary" /> AI-Powered Form Builder</CardTitle>
-                 <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>About the AI Form Builder</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Describe a form in natural language, and the AI will generate a structured list of fields for you. You can then save this as a new onboarding process in your Form Library.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogAction>Got it!</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </div>
-            <CardDescription>Generate a new form structure using AI by answering a few questions.</CardDescription>
+          <div className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-xl"><Wand2 className="h-5 w-5 text-primary" /> AI-Powered Process Builder</CardTitle>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>About the AI Process Builder</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Use AI to generate new onboarding processes. You can use the Guided Wizard for a step-by-step approach or the Free-form Prompt for more direct control.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogAction>Got it!</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+          <CardDescription>Generate new onboarding processes using AI.</CardDescription>
         </CardHeader>
-        <CardContent>
-            <Button onClick={() => setIsAiBuilderOpen(true)}>
-                <Wand2 className="mr-2 h-4 w-4" />
-                Start
-            </Button>
+        <CardContent className="space-y-6">
+             <RadioGroup value={aiBuilderMode} onValueChange={(v) => setAiBuilderMode(v as 'wizard' | 'prompt')} className="flex items-center gap-4">
+                <div className="flex items-center space-x-2"><RadioGroupItem value="wizard" id="wizard" /><Label htmlFor="wizard">Guided Wizard</Label></div>
+                <div className="flex items-center space-x-2"><RadioGroupItem value="prompt" id="prompt" /><Label htmlFor="prompt">Free-form Prompt</Label></div>
+            </RadioGroup>
+
+            {aiBuilderMode === 'wizard' ? (
+                <div>
+                    <p className="text-sm text-muted-foreground mb-4">A step-by-step guide to create a new form by answering questions.</p>
+                    <Button onClick={() => setIsAiBuilderOpen(true)}>
+                        <Wand2 className="mr-2 h-4 w-4" />
+                        Start Wizard
+                    </Button>
+                </div>
+            ) : (
+                <div className="space-y-6">
+                    {/* Phase 1 */}
+                    <div className="p-4 border rounded-lg space-y-3">
+                         <div className="flex items-center justify-between">
+                            <Label htmlFor="prompt-p1" className="font-semibold">Phase 1: Application Form</Label>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground" /></Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Phase 1 Prompt</AlertDialogTitle>
+                                        <AlertDialogDescription>Describe the application form you want to create. For example: "Create a simple application form for a truck driver position. I need their name, contact info, driver's license number, and 5 years of employment history."</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter><AlertDialogAction>Got it!</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                        <Textarea id="prompt-p1" placeholder="Describe the application form you need..." value={prompt} onChange={(e) => setPrompt(e.target.value)} />
+                        <Button onClick={handleGenerateFromPrompt} disabled={isGenerating}>
+                            {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Generate Form
+                        </Button>
+                    </div>
+
+                     {/* Phase 2 */}
+                    <div className="p-4 border rounded-lg space-y-3 opacity-50">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <Label htmlFor="prompt-p2" className="font-semibold">Phase 2: Interview Screen</Label>
+                                <p className="text-xs text-amber-600 font-semibold">Available soon</p>
+                            </div>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground" /></Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Phase 2 Prompt</AlertDialogTitle>
+                                        <AlertDialogDescription>This will allow you to generate custom questions and layouts for the interview review phase.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter><AlertDialogAction>Got it!</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                        <Textarea id="prompt-p2" placeholder="Describe the interview questions or screen..." disabled />
+                        <Button disabled>Generate</Button>
+                    </div>
+
+                     {/* Phase 3 */}
+                    <div className="p-4 border rounded-lg space-y-3 opacity-50">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <Label htmlFor="prompt-p3" className="font-semibold">Phase 3: Required Documentation</Label>
+                                <p className="text-xs text-amber-600 font-semibold">Available soon</p>
+                            </div>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground" /></Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Phase 3 Prompt</AlertDialogTitle>
+                                        <AlertDialogDescription>This will allow you to specify which documents are required for a specific role.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter><AlertDialogAction>Got it!</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                        <Textarea id="prompt-p3" placeholder="List the required documents..." disabled />
+                        <Button disabled>Generate</Button>
+                    </div>
+                </div>
+            )}
              <AiFormBuilderDialog 
                 isOpen={isAiBuilderOpen} 
                 onOpenChange={setIsAiBuilderOpen}
@@ -508,3 +618,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
