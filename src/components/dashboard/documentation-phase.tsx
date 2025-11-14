@@ -12,7 +12,7 @@ import { CopyDocumentationLink } from "./copy-documentation-link";
 import { getCandidate } from "@/app/actions/client-actions";
 import { ApplicationData } from "@/lib/schemas";
 import { getCompanies } from "@/app/actions/company-actions";
-import { RequiredDoc } from "@/lib/company-schemas";
+import { OnboardingProcess, RequiredDoc } from "@/lib/company-schemas";
 
 
 function buildCandidateProfile(candidate: ApplicationData | null): string {
@@ -31,28 +31,35 @@ export function DocumentationPhase({ candidateId }: { candidateId: string}) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<ApplicationData | null>(null);
-  const [requiredDocs, setRequiredDocs] = useState<RequiredDoc[]>([]);
-  const [companyName, setCompanyName] = useState<string>('');
-  const { toast } = useToast();
+  const [activeProcess, setActiveProcess] = useState<OnboardingProcess | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
 
   const loadData = useCallback(async () => {
-    if (candidateId) {
-      const candidateData = await getCandidate(candidateId);
-      setCandidate(candidateData ? JSON.parse(JSON.stringify(candidateData)) : null);
-    }
+    if (!candidateId) return;
+
+    const candidateData = await getCandidate(candidateId);
+    setCandidate(candidateData);
+
     const companies = await getCompanies();
     if (companies && companies.length > 0) {
-        // Assuming the candidate belongs to the first company or a specific logic is needed
-        const currentCompany = companies[0];
-        setCompanyName(currentCompany.name || '');
-
-        // Find the process this candidate might be associated with
-        const process = currentCompany.onboardingProcesses?.find(p => candidate?.applyingFor.includes(p.name));
-        setRequiredDocs(process?.requiredDocs || []);
+      const currentCompany = companies[0];
+      
+      // Find the process this candidate is associated with.
+      // This is a simplified logic. A real app might have a direct link.
+      // We'll try to find a process whose name matches what the candidate applied for.
+      let foundProcess = currentCompany.onboardingProcesses?.find(p => 
+        candidateData?.applyingFor?.includes(p.name)
+      ) || null;
+      
+      // If no specific process is found, default to the first one.
+      if (!foundProcess && currentCompany.onboardingProcesses && currentCompany.onboardingProcesses.length > 0) {
+        foundProcess = currentCompany.onboardingProcesses[0];
+      }
+      
+      setActiveProcess(foundProcess);
     }
-
-  }, [candidateId, candidate?.applyingFor]);
+  }, [candidateId]);
 
   useEffect(() => {
     startTransition(() => {
@@ -70,15 +77,20 @@ export function DocumentationPhase({ candidateId }: { candidateId: string}) {
     setError(null);
     setMissingDocuments(null);
 
-    const submittedDocs = ["Resume/CV", "Application Form"];
+    const submittedDocs: string[] = [];
+    if (candidate.resume) submittedDocs.push("Resume/CV");
+    if (candidate.applicationPdfUrl) submittedDocs.push("Application Form");
     if (candidate.idCard) submittedDocs.push("Proof of Identity");
     if (candidate.proofOfAddress) submittedDocs.push("Proof of Address");
+    if (candidate.i9) submittedDocs.push("I-9 Form");
+    if (candidate.w4) submittedDocs.push("W-4 Form");
+    candidate.documents?.forEach(d => submittedDocs.push(d.title));
 
     const input: DetectMissingDocumentsInput = {
       candidateProfile: buildCandidateProfile(candidate),
       onboardingPhase: "Detailed Documentation",
       submittedDocuments: submittedDocs,
-      requiredDocuments: requiredDocs,
+      requiredDocuments: activeProcess?.requiredDocs || [],
     };
 
     try {
@@ -114,7 +126,7 @@ export function DocumentationPhase({ candidateId }: { candidateId: string}) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <CopyDocumentationLink candidateId={candidateId} companyName={companyName} />
+            <CopyDocumentationLink candidateId={candidateId} processId={activeProcess?.id} />
           </CardContent>
         </Card>
 

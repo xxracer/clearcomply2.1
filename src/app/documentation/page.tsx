@@ -15,7 +15,7 @@ import { getFile } from "../actions/kv-actions";
 function DocumentationPageContent() {
     const searchParams = useSearchParams();
     const candidateId = searchParams.get('candidateId');
-    const companyIdFromUrl = searchParams.get('company'); // This is a slug like 'licoreria'
+    const processId = searchParams.get('processId');
 
     const [company, setCompany] = useState<Partial<Company> | null>(null);
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -29,18 +29,18 @@ function DocumentationPageContent() {
             let foundCompany: Company | null = null;
             let foundProcess: OnboardingProcess | null = null;
 
-            if (companyIdFromUrl) {
-                // Find the company whose name, when slugified, matches the URL parameter
-                foundCompany = companies.find(
-                    c => c.name?.toLowerCase().replace(/\s+/g, '-') === companyIdFromUrl
-                ) || null;
-                // For documentation, we assume it's linked to the first available process.
-                // A more robust solution might pass a processId as well.
-                if (foundCompany) {
-                    foundProcess = foundCompany.onboardingProcesses?.[0] || null;
+            if (processId) {
+                // Find which company this process belongs to
+                for (const c of companies) {
+                    const p = c.onboardingProcesses?.find(proc => proc.id === processId);
+                    if (p) {
+                        foundCompany = c;
+                        foundProcess = p;
+                        break;
+                    }
                 }
             } else if (companies.length > 0) {
-                 // Fallback to the first company if no companyId is in the URL
+                 // Fallback to the first company and its first process if no processId is in the URL
                 foundCompany = companies[0];
                 foundProcess = foundCompany.onboardingProcesses?.[0] || null;
             }
@@ -64,7 +64,7 @@ function DocumentationPageContent() {
         }
 
         loadData();
-    }, [companyIdFromUrl]);
+    }, [processId]);
 
     if (loading) {
         return (
@@ -82,9 +82,9 @@ function DocumentationPageContent() {
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
                             <AlertTriangle className="h-8 w-8 text-destructive" />
                         </div>
-                    <CardTitle className="font-headline text-2xl mt-4">Company Not Found</CardTitle>
+                    <CardTitle className="font-headline text-2xl mt-4">Configuration Not Found</CardTitle>
                     <CardDescription>
-                        The company specified in the link could not be found. Please check the URL.
+                        The process specified in the link could not be found. Please check the URL.
                     </CardDescription>
                     </CardHeader>
                 </Card>

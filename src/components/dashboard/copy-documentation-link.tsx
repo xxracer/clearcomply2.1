@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Check, Link as LinkIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-export function CopyDocumentationLink({ candidateId, companyName }: { candidateId?: string, companyName?: string }) {
+export function CopyDocumentationLink({ candidateId, processId }: { candidateId?: string, processId?: string }) {
   const { toast } = useToast();
   const [isCopied, setIsCopied] = useState(false);
   const [baseUrl, setBaseUrl] = useState('');
@@ -25,18 +25,16 @@ export function CopyDocumentationLink({ candidateId, companyName }: { candidateI
       });
       return;
     }
-    if (!companyName || !candidateId) {
+    if (!processId || !candidateId) {
       toast({
         variant: "destructive",
         title: "Cannot copy link",
-        description: "No active candidate found for the documentation phase.",
+        description: "Could not find an active process or candidate.",
       });
       return;
     };
     
-    // Create a URL-friendly slug for the company name
-    const companySlug = companyName.toLowerCase().replace(/\s+/g, '-');
-    const urlToCopy = `${baseUrl}?company=${encodeURIComponent(companySlug)}&candidateId=${encodeURIComponent(candidateId)}`;
+    const urlToCopy = `${baseUrl}?processId=${encodeURIComponent(processId)}&candidateId=${encodeURIComponent(candidateId)}`;
 
     navigator.clipboard.writeText(urlToCopy).then(() => {
       setIsCopied(true);
@@ -49,7 +47,7 @@ export function CopyDocumentationLink({ candidateId, companyName }: { candidateI
   };
 
   return (
-     <Button onClick={handleCopy} disabled={!candidateId || !companyName}>
+     <Button onClick={handleCopy} disabled={!candidateId || !processId}>
         {isCopied ? <Check className="mr-2 h-4 w-4 text-green-500" /> : <LinkIcon className="mr-2 h-4 w-4" />}
         Copy Documentation Link
     </Button>
