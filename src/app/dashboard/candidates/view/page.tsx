@@ -26,6 +26,7 @@ function ApplicationViewContent() {
     const [applicationData, setApplicationData] = useState<ApplicationData | null>(null);
     const [loading, setLoading] = useState(true);
     const [isInterviewSubmitted, setIsInterviewSubmitted] = useState(false);
+    const [activeTab, setActiveTab] = useState("application");
 
     const loadData = useCallback(async () => {
         if (candidateId) {
@@ -37,6 +38,16 @@ function ApplicationViewContent() {
             } else {
                 setIsInterviewSubmitted(false);
             }
+            
+            // Set initial tab based on data
+            if (data?.status === 'new-hire' || data?.status === 'employee' || data?.status === 'inactive') {
+                setActiveTab("documentation");
+            } else if (data?.status === 'interview') {
+                setActiveTab("interview");
+            } else {
+                setActiveTab("application");
+            }
+
             setLoading(false);
         } else {
             setLoading(false);
@@ -93,6 +104,7 @@ function ApplicationViewContent() {
                 toast({ title: "Interview Reviewed", description: "You can now proceed to the documentation phase." });
                 setIsInterviewSubmitted(true);
                 loadData();
+                setActiveTab("documentation"); // Switch to documentation tab
             },
             "Error saving interview review"
         );
@@ -145,14 +157,6 @@ function ApplicationViewContent() {
     const isInterviewPhase = applicationData.status === 'interview';
     const isDocumentationPhase = applicationData.status === 'new-hire' || applicationData.status === 'employee' || applicationData.status === 'inactive';
     
-    // Determine the default tab based on the current state
-    let defaultTabValue = 'application';
-    if (isDocumentationPhase) {
-        defaultTabValue = 'documentation';
-    } else if (isInterviewPhase) {
-        defaultTabValue = 'interview';
-    }
-
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -186,20 +190,20 @@ function ApplicationViewContent() {
 
             <ProgressTracker candidateId={candidateId} status={applicationData.status || 'candidate'} />
 
-            <Tabs defaultValue={defaultTabValue} className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList>
                     <TabsTrigger value="application"><FileText className="mr-2 h-4 w-4"/> Original Application</TabsTrigger>
-                    { (isInterviewPhase || isDocumentationPhase) && (
+                    { (isInterviewPhase || isDocumentationPhase || isInterviewSubmitted) && (
                         <TabsTrigger value="interview"><MessageSquare className="mr-2 h-4 w-4"/> Interview Review</TabsTrigger>
                     )}
-                    { isDocumentationPhase || isInterviewSubmitted ? (
+                    { (isDocumentationPhase || isInterviewSubmitted) ? (
                         <TabsTrigger value="documentation"><FileUp className="mr-2 h-4 w-4" /> Documentation</TabsTrigger>
                     ) : null}
                 </TabsList>
                 <TabsContent value="application">
                     <ApplicationView data={applicationData} />
                 </TabsContent>
-                { (isInterviewPhase || isDocumentationPhase) && (
+                { (isInterviewPhase || isDocumentationPhase || isInterviewSubmitted) && (
                     <TabsContent value="interview">
                         <InterviewReviewForm 
                             candidateName={`${applicationData.firstName} ${applicationData.lastName}`} 
