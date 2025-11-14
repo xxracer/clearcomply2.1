@@ -17,12 +17,24 @@ import { OnboardingProcess, RequiredDoc } from "@/lib/company-schemas";
 
 function buildCandidateProfile(candidate: ApplicationData | null): string {
   if (!candidate) return "No candidate data available.";
+  
+  const submittedDocs: string[] = [];
+  if (candidate.resume) submittedDocs.push("Resume/CV");
+  if (candidate.applicationPdfUrl) submittedDocs.push("Application Form");
+  if (candidate.driversLicense) submittedDocs.push("Driver's License");
+  if (candidate.idCard) submittedDocs.push("Proof of Identity / ID Card");
+  if (candidate.proofOfAddress) submittedDocs.push("Proof of Address");
+  if (candidate.i9) submittedDocs.push("I-9 Form");
+  if (candidate.w4) submittedDocs.push("W-4 Form");
+  if (candidate.educationalDiplomas) submittedDocs.push("Educational Diplomas");
+  candidate.documents?.forEach(d => submittedDocs.push(d.title));
+
+
   return `
     Name: ${candidate.firstName} ${candidate.lastName}
     Position Applying For: ${candidate.position}
     Applying to: ${candidate.applyingFor.join(", ")}
-    Education: College - ${candidate.education.college?.degree || 'N/A'}, High School - ${candidate.education.highSchool?.degree || 'N/A'}
-    Key Skills: ${candidate.specializedSkills || 'N/A'}
+    Submitted Documents: ${submittedDocs.join(", ") || 'None'}
   `;
 }
 
@@ -80,10 +92,12 @@ export function DocumentationPhase({ candidateId }: { candidateId: string}) {
     const submittedDocs: string[] = [];
     if (candidate.resume) submittedDocs.push("Resume/CV");
     if (candidate.applicationPdfUrl) submittedDocs.push("Application Form");
-    if (candidate.idCard) submittedDocs.push("Proof of Identity");
+    if (candidate.driversLicense) submittedDocs.push("Driver's License");
+    if (candidate.idCard) submittedDocs.push("Proof of Identity / ID Card");
     if (candidate.proofOfAddress) submittedDocs.push("Proof of Address");
     if (candidate.i9) submittedDocs.push("I-9 Form");
     if (candidate.w4) submittedDocs.push("W-4 Form");
+    if (candidate.educationalDiplomas) submittedDocs.push("Educational Diplomas");
     candidate.documents?.forEach(d => submittedDocs.push(d.title));
 
     const input: DetectMissingDocumentsInput = {
