@@ -74,7 +74,7 @@ function DocumentationPageContent() {
         )
     }
 
-    if (!company) {
+    if (!company || !process) {
          return (
             <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
                 <Card className="w-full max-w-lg mx-auto text-center">
@@ -84,7 +84,7 @@ function DocumentationPageContent() {
                         </div>
                     <CardTitle className="font-headline text-2xl mt-4">Configuration Not Found</CardTitle>
                     <CardDescription>
-                        The process specified in the link could not be found. Please check the URL.
+                        The process specified in the link could not be found. Please check the URL or contact HR.
                     </CardDescription>
                     </CardHeader>
                 </Card>
