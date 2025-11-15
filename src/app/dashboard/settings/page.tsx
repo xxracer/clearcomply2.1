@@ -48,11 +48,14 @@ export default function SettingsPage() {
   const [isCompanyDetailsDialogOpen, setCompanyDetailsDialogOpen] = useState(false);
   const [isFormLibraryDialogOpen, setFormLibraryDialogOpen] = useState(false);
   const [isCustomFormInfoOpen, setIsCustomFormInfoOpen] = useState(false);
+  const [isAiBuilderInfoOpen, setIsAiBuilderInfoOpen] = useState(false);
+
 
   // State for the "click here first" hint
   const [companyDetailsHintViewed, setCompanyDetailsHintViewed] = useState(false);
   const [aiBuilderHintViewed, setAiBuilderHintViewed] = useState(false);
   const showCompanyDetailsHint = !company.name && !companyDetailsHintViewed;
+  const showAiBuilderHint = !aiBuilderHintViewed;
 
 
   // Load initial company data
@@ -268,40 +271,36 @@ export default function SettingsPage() {
       </div>
       
       <Card>
-        <CardContent className="p-4">
+          <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  <CardTitle className="text-xl">Company Details</CardTitle>
+              </div>
+              {showCompanyDetailsHint && (
+                  <div className="flex items-center gap-2 text-primary animate-pulse">
+                      <p className="text-sm font-medium">Click here first!</p>
+                      <ArrowRight className="h-5 w-5" />
+                       <AlertDialog open={isCompanyDetailsDialogOpen} onOpenChange={setCompanyDetailsDialogOpen}>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7"><Info className="h-5 w-5 text-muted-foreground" /></Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>About Company Details</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      This information will be used across the application portal, including on application forms and documentation requests to personalize the experience for your candidates.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogAction onClick={() => setCompanyDetailsHintViewed(true)}>Got it!</AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
+                  </div>
+              )}
+          </CardHeader>
+        <CardContent>
           <div className="border rounded-lg p-4 relative">
-            <div className="flex justify-between items-start mb-1">
-                <div className="flex items-center gap-2">
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                        <Building className="h-5 w-5" />
-                        Company Details
-                    </CardTitle>
-                    <AlertDialog open={isCompanyDetailsDialogOpen} onOpenChange={setCompanyDetailsDialogOpen}>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>About Company Details</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This information will be used across the application portal, including on application forms and documentation requests to personalize the experience for your candidates.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogAction onClick={() => setCompanyDetailsHintViewed(true)}>Got it!</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-
-                {showCompanyDetailsHint && (
-                    <div className="flex items-center gap-2 text-primary animate-pulse">
-                        <p className="text-sm font-medium">Click here first!</p>
-                        <ArrowRight className="h-5 w-5" />
-                    </div>
-                )}
-            </div>
-
             <CardDescription className="mb-6">Manage the company profile and associated onboarding users. Remember to save your changes.</CardDescription>
             <fieldset disabled={showCompanyDetailsHint} className="grid grid-cols-1 md:grid-cols-2 gap-8 disabled:opacity-50">
               <div className="space-y-4">
@@ -364,11 +363,14 @@ export default function SettingsPage() {
       
       <Card>
         <CardHeader>
-            <div className="flex items-center gap-2">
-                <CardTitle className="flex items-center gap-2"><Library className="h-5 w-5" /> Form Library</CardTitle>
-                 <AlertDialog open={isFormLibraryDialogOpen} onOpenChange={setFormLibraryDialogOpen}>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Library className="h-5 w-5" />
+                    <CardTitle className="text-xl">Form Library</CardTitle>
+                </div>
+                <AlertDialog open={isFormLibraryDialogOpen} onOpenChange={setFormLibraryDialogOpen}>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7"><Info className="h-5 w-5 text-muted-foreground" /></Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
@@ -490,13 +492,35 @@ export default function SettingsPage() {
 
 
       <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
               <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-headline font-bold text-foreground flex items-center gap-2"><Wand2 className="h-5 w-5 text-primary" />AI-Powered Process Builder</h2>
-                  <ArrowRight className="h-5 w-5 text-primary" />
+                  <Wand2 className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-xl">AI-Powered Process Builder</CardTitle>
               </div>
-              <CardDescription>Generate new onboarding processes using AI.</CardDescription>
+               {showAiBuilderHint && (
+                  <div className="flex items-center gap-2 text-primary animate-pulse">
+                      <p className="text-sm font-medium">Click here first!</p>
+                      <ArrowRight className="h-5 w-5" />
+                        <AlertDialog open={isAiBuilderInfoOpen} onOpenChange={setIsAiBuilderInfoOpen}>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7"><Info className="h-5 w-5 text-muted-foreground" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>About the AI Process Builder</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Use AI to quickly generate new onboarding processes. You can use the guided wizard for a step-by-step approach or write a free-form prompt for more custom needs.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogAction onClick={() => setAiBuilderHintViewed(true)}>Got it!</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                  </div>
+              )}
           </CardHeader>
+        <fieldset disabled={showAiBuilderHint} className="disabled:opacity-50">
         <CardContent className="space-y-6">
              <RadioGroup value={aiBuilderMode} onValueChange={(v) => setAiBuilderMode(v as 'wizard' | 'prompt')} className="flex items-center gap-4">
                 <div className="flex items-center space-x-2"><RadioGroupItem value="wizard" id="wizard" /><Label htmlFor="wizard">Guided Wizard</Label></div>
@@ -605,10 +629,9 @@ export default function SettingsPage() {
                 }}
              />
         </CardContent>
+        </fieldset>
       </Card>
 
     </div>
   );
 }
-
-    
