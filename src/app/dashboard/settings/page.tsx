@@ -492,33 +492,33 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                <CardTitle className="flex items-center gap-2 text-xl"><Wand2 className="h-5 w-5 text-primary" /> AI-Powered Process Builder</CardTitle>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7"><Info className="h-5 w-5 text-muted-foreground cursor-pointer" /></Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>About the AI Process Builder</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Use AI to generate new onboarding processes. You can use the Guided Wizard for a step-by-step approach or the Free-form Prompt for more direct control.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogAction onClick={() => setAiBuilderHintViewed(true)}>Got it!</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-            </div>
-             {!aiBuilderHintViewed && (
-                <div className="flex items-center gap-2 text-primary animate-pulse">
-                    <p className="text-sm font-medium hidden sm:block">Click here first!</p>
-                    <ArrowRight className="h-5 w-5" />
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-xl"><Wand2 className="h-5 w-5 text-primary" /> AI-Powered Process Builder</CardTitle>
+                    <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7"><Info className="h-5 w-5 text-muted-foreground cursor-pointer" /></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>About the AI Process Builder</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Use AI to generate new onboarding processes. You can use the Guided Wizard for a step-by-step approach or the Free-form Prompt for more direct control.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => setAiBuilderHintViewed(true)}>Got it!</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                    </AlertDialog>
                 </div>
-            )}
-          </div>
+                {!aiBuilderHintViewed && (
+                    <div className="flex items-center gap-2 text-primary animate-pulse">
+                        <p className="text-sm font-medium hidden sm:block">Click here first!</p>
+                        <ArrowRight className="h-5 w-5" />
+                    </div>
+                )}
+            </div>
           <CardDescription>Generate new onboarding processes using AI.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
