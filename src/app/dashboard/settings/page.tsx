@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useTransition } from "react";
 import Image from "next/image";
-import { getCompanies, createOrUpdateCompany } from "@/app/actions/company-actions";
-import { type Company, type OnboardingProcess, requiredDocSchema, type RequiredDoc, type ApplicationForm as AppFormType } from "@/lib/company-schemas";
+import { getCompanies, createOrUpdateCompany, addOnboardingProcess } from "@/app/actions/company-actions";
+import { type Company, type OnboardingProcess, requiredDocSchema, type RequiredDoc, type ApplicationForm as AppFormType, AiFormField } from "@/lib/company-schemas";
 import { getFile, uploadKvFile, deleteFile } from "@/app/actions/kv-actions";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { generateIdForServer } from "@/lib/server-utils";
@@ -21,7 +21,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { AiFormBuilderDialog } from "@/components/dashboard/settings/ai-form-builder-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { generateForm } from "@/ai/flows/generate-form-flow";
-import { AiFormField } from "@/lib/company-schemas";
 import { cn } from "@/lib/utils";
 
 
@@ -58,10 +57,7 @@ export default function SettingsPage() {
   const showCompanyDetailsHint = !company.name;
   const showProcessesHint = !showCompanyDetailsHint && (!company.onboardingProcesses || company.onboardingProcesses.length === 0);
 
-
-  // Load initial company data
-  useEffect(() => {
-    async function loadInitialData() {
+  const loadInitialData = async () => {
       setIsLoading(true);
       const companies = await getCompanies();
       const firstCompany = companies[0] || {};
@@ -83,6 +79,9 @@ export default function SettingsPage() {
       }
       setIsLoading(false);
     }
+
+  // Load initial company data
+  useEffect(() => {
     loadInitialData();
   }, []);
 
@@ -90,7 +89,11 @@ export default function SettingsPage() {
     setCompany(prev => ({ ...prev, [field]: value }));
   };
   
-  const handleAddNewProcess = (name: string, fields: AiFormField[]) => {
+  const handleAddNewProcess = async (name: string, fields: AiFormField[]) => {
+      if (!company.id) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Company must be saved before adding a process.' });
+          return;
+      }
       const newProcess: OnboardingProcess = {
           id: generateIdForServer(),
           name: name,
@@ -98,8 +101,19 @@ export default function SettingsPage() {
           interviewScreen: { type: 'template' },
           requiredDocs: [],
       };
-      const updatedProcesses = [...(company.onboardingProcesses || []), newProcess];
-      handleFieldChange('onboardingProcesses', updatedProcesses);
+      
+      startTransition(async () => {
+          const result = await addOnboardingProcess(company.id!, newProcess);
+          if (result.success && result.company) {
+              setCompany(result.company);
+              toast({
+                  title: "Process Added",
+                  description: `"${name}" has been saved.`
+              });
+          } else {
+              toast({ variant: 'destructive', title: 'Save Failed', description: result.error });
+          }
+      });
   };
   
     const handleGenerateFromPrompt = async () => {
@@ -110,11 +124,7 @@ export default function SettingsPage() {
         setIsGenerating(true);
         try {
             const result = await generateForm({ prompt });
-            handleAddNewProcess(result.formName, result.fields);
-            toast({
-                title: 'Form Generated!',
-                description: `"${result.formName}" has been added. Don't forget to save your changes.`,
-            });
+            await handleAddNewProcess(result.formName, result.fields);
             setPrompt('');
         } catch (error) {
             toast({ variant: 'destructive', title: 'Generation Failed', description: (error as Error).message });
@@ -131,27 +141,24 @@ export default function SettingsPage() {
         return;
       }
       
-      try {
-        let dataToSave = { ...company };
-        
-        if (logoFile) {
-          const logoKey = `logo-${dataToSave.name?.replace(/\s+/g, '-')}-${Date.now()}`;
-          if (dataToSave.logo) {
-            await deleteFile(dataToSave.logo);
-          }
-          dataToSave.logo = await uploadKvFile(logoFile, logoKey);
+      let dataToSave = { ...company };
+      
+      if (logoFile) {
+        const logoKey = `logo-${dataToSave.name?.replace(/\s+/g, '-')}-${Date.now()}`;
+        if (dataToSave.logo) {
+          await deleteFile(dataToSave.logo);
         }
+        dataToSave.logo = await uploadKvFile(logoFile, logoKey);
+      }
 
-        const result = await createOrUpdateCompany(dataToSave);
-        if (!result.success || !result.company) throw new Error(result.error || "Failed to save.");
-
-        setCompany(result.company);
-        setLogoFile(undefined);
-        setIsCompanySaved(true);
-        setShowSavedDialog(true); // Trigger the dialog only after a successful save
-
-      } catch (error) {
-        toast({ variant: "destructive", title: "Save Failed", description: (error as Error).message });
+      const result = await createOrUpdateCompany(dataToSave);
+      if (result.success && result.company) {
+          setCompany(result.company);
+          setLogoFile(undefined);
+          setIsCompanySaved(true);
+          setShowSavedDialog(true);
+      } else {
+        toast({ variant: "destructive", title: "Save Failed", description: result.error || "Failed to save." });
       }
     });
   };
@@ -215,7 +222,6 @@ export default function SettingsPage() {
           </CardHeader>
         <CardContent>
           <div className="border rounded-lg p-4 relative">
-            <CardDescription className="mb-6">Manage the company profile and associated onboarding users. Remember to save your changes.</CardDescription>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <fieldset disabled={isCompanySaved}>
                 <div className="space-y-4">
@@ -373,10 +379,11 @@ export default function SettingsPage() {
             {aiBuilderMode === 'wizard' ? (
                 <div>
                     <p className="text-sm text-muted-foreground mb-4">A step-by-step guide to create a new form by answering questions.</p>
-                    <Button onClick={() => setIsAiBuilderOpen(true)}>
+                    <Button onClick={() => setIsAiBuilderOpen(true)} disabled={!isCompanySaved}>
                         <Wand2 className="mr-2 h-4 w-4" />
                         Start Wizard
                     </Button>
+                     {!isCompanySaved && <p className="text-xs text-destructive mt-2">You must save the company details before using the wizard.</p>}
                 </div>
             ) : (
                 <div className="space-y-6">
@@ -404,11 +411,12 @@ export default function SettingsPage() {
                                 </AlertDialog>
                             </div>
                         </div>
-                        <Textarea id="prompt-p1" placeholder="Describe the application form you need..." value={prompt} onChange={(e) => setPrompt(e.target.value)} />
-                        <Button onClick={handleGenerateFromPrompt} disabled={isGenerating}>
-                            {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Textarea id="prompt-p1" placeholder="Describe the application form you need..." value={prompt} onChange={(e) => setPrompt(e.target.value)} disabled={!isCompanySaved} />
+                        <Button onClick={handleGenerateFromPrompt} disabled={isGenerating || isPending || !isCompanySaved}>
+                            {(isGenerating || isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Generate Form
                         </Button>
+                         {!isCompanySaved && <p className="text-xs text-destructive mt-2">You must save the company details before generating a form.</p>}
                     </div>
 
                     <div className="p-4 border rounded-lg space-y-3 opacity-50">
@@ -480,10 +488,6 @@ export default function SettingsPage() {
                 companyName={company.name}
                 onFormGenerated={(name, fields) => {
                     handleAddNewProcess(name, fields);
-                    toast({
-                        title: "AI Form Created!",
-                        description: `"${name}" has been added. Remember to save your changes.`
-                    });
                 }}
              />
         </CardContent>
@@ -494,12 +498,12 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>Your IA Forms</CardTitle>
           <CardDescription>
-            Forms created by the AI will appear here. Remember to save your settings to persist them.
+            Forms created by the AI will appear here. They are saved automatically.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {(company.onboardingProcesses || []).filter(p => p.id !== company.onboardingProcesses?.[0]?.id).map(process => (
+            {(company.onboardingProcesses || []).filter(p => p.applicationForm?.type === 'custom').map(process => (
               <div key={process.id} className="flex items-center justify-between p-3 rounded-md border bg-muted/30">
                 <span className="font-medium">{process.name}</span>
                 <AlertDialog>
@@ -523,7 +527,7 @@ export default function SettingsPage() {
                 </AlertDialog>
               </div>
             ))}
-            {(company.onboardingProcesses?.length || 0) <= 1 && (
+            {(company.onboardingProcesses?.filter(p => p.applicationForm?.type === 'custom').length || 0) === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">No AI-generated forms yet. Use the builder above to create one.</p>
             )}
           </div>
@@ -547,5 +551,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    

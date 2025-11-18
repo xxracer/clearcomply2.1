@@ -2,7 +2,7 @@
 'use server';
 
 import { kv } from '@vercel/kv';
-import { Company } from "@/lib/company-schemas";
+import { Company, OnboardingProcess } from "@/lib/company-schemas";
 import { generateIdForServer } from "@/lib/server-utils";
 import { revalidatePath } from 'next/cache';
 
@@ -56,6 +56,32 @@ export async function createOrUpdateCompany(companyData: Partial<Company>) {
         return { success: false, error: `Failed to save company data: ${(error as Error).message}` };
     }
 }
+
+export async function addOnboardingProcess(companyId: string, process: OnboardingProcess) {
+    try {
+        const companies = await getCompanies();
+        const companyIndex = companies.findIndex(c => c.id === companyId);
+
+        if (companyIndex === -1) {
+            throw new Error("Company not found to add process to.");
+        }
+
+        if (!companies[companyIndex].onboardingProcesses) {
+            companies[companyIndex].onboardingProcesses = [];
+        }
+        companies[companyIndex].onboardingProcesses!.push(process);
+
+        await kv.set(COMPANIES_KEY, companies);
+
+        revalidatePath('/dashboard/settings');
+        
+        return { success: true, company: companies[companyIndex] };
+    } catch (error) {
+        console.error("Error adding onboarding process:", error);
+        return { success: false, error: `Failed to add process: ${(error as Error).message}` };
+    }
+}
+
 
 export async function deleteCompany(id: string) {
     try {

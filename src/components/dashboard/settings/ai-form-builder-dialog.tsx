@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +30,7 @@ type AiFormBuilderDialogProps = {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
     companyName?: string;
-    onFormGenerated: (name: string, fields: AiFormField[]) => void;
+    onFormGenerated: (name: string, fields: AiFormField[]) => Promise<void>;
 }
 
 export function AiFormBuilderDialog({ isOpen, onOpenChange, companyName, onFormGenerated }: AiFormBuilderDialogProps) {
@@ -38,6 +38,7 @@ export function AiFormBuilderDialog({ isOpen, onOpenChange, companyName, onFormG
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [generatedForm, setGeneratedForm] = useState<{ name: string; date: Date; fields: GenerateFormOptionsOutput['fields'] } | null>(null);
+    const [isPending, startTransition] = useTransition();
 
 
     // Form State
@@ -99,16 +100,20 @@ export function AiFormBuilderDialog({ isOpen, onOpenChange, companyName, onFormG
     
     const handleConfirmAndSave = () => {
         if (!generatedForm) return;
-        onFormGenerated(generatedForm.name, generatedForm.fields);
-        handleOpenChange(false);
+        startTransition(async () => {
+            await onFormGenerated(generatedForm.name, generatedForm.fields);
+            handleOpenChange(false);
+        });
     }
 
     const renderStep = () => {
-        if (isLoading) {
+        if (isLoading || isPending) {
             return (
                 <div className="flex flex-col items-center justify-center space-y-4 p-8">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                    <p className="text-muted-foreground">Generating your form, please wait...</p>
+                    <p className="text-muted-foreground">
+                        {isPending ? "Saving your form..." : "Generating your form, please wait..."}
+                    </p>
                 </div>
             );
         }
