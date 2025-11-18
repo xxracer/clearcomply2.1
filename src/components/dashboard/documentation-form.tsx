@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, Controller } from "react-hook-form"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Loader2, File, FileText, Download } from "lucide-react"
+import { Loader2, File as FileIcon, FileText, Download } from "lucide-react"
 import { z } from "zod"
 
 
@@ -152,7 +152,7 @@ export function DocumentationForm({ companyName, candidateId }: { companyName: s
                                                       value={undefined}
                                                       className="pr-12"
                                                     />
-                                                    <File className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                                    <FileIcon className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                                 </div>
                                             </FormControl>
                                              {file instanceof File && (
