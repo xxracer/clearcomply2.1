@@ -36,7 +36,7 @@ async function fileToDataURL(file: File): Promise<string> {
 
 // --- Public Client Actions ---
 
-export async function createCandidate(data: ApplicationSchema): Promise<{ success: boolean, id?: string, error?: string }> {
+export async function createCandidate(data: Partial<ApplicationSchema>): Promise<{ success: boolean, id?: string, error?: string }> {
     try {
         const id = generateId();
         const newCandidate: Partial<ApplicationData> = {
@@ -45,10 +45,10 @@ export async function createCandidate(data: ApplicationSchema): Promise<{ succes
             created_at: new Date().toISOString(),
             status: 'candidate',
             documents: [],
-            miscDocuments: []
+            miscDocuments: [],
         };
         
-        // Convert files to data URLs before saving
+        // Convert files to data URLs before saving, if they exist
         if (data.resume instanceof File) {
             newCandidate.resume = await fileToDataURL(data.resume);
         }

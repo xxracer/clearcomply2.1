@@ -11,6 +11,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { getFile } from "../actions/kv-actions";
+import { AiGeneratedForm } from "@/components/dashboard/ai-generated-form";
 
 function ApplicationContent() {
   const searchParams = useSearchParams();
@@ -41,7 +42,8 @@ function ApplicationContent() {
         
         if (!foundCompany && companies.length > 0) {
             foundCompany = companies[0];
-            foundProcess = foundCompany.onboardingProcesses?.[0] || null;
+            // For generic link, try to find a default process or fall back
+            foundProcess = foundCompany.onboardingProcesses?.find(p => p.applicationForm?.type === 'template') || foundCompany.onboardingProcesses?.[0] || null;
         }
         
         setCompany(foundCompany);
@@ -49,7 +51,6 @@ function ApplicationContent() {
 
         if (foundCompany?.logo) {
             try {
-                // The logo field is a key to KV, so we fetch the URL
                 const url = await getFile(foundCompany.logo);
                 setLogoUrl(url);
             } catch (e) {
@@ -82,9 +83,10 @@ function ApplicationContent() {
      )
   }
 
-  const useTemplate = !process || process.applicationForm?.type === 'template';
-  const customImages = process?.applicationForm?.images || [];
-
+  const applicationForm = process?.applicationForm;
+  const isTemplateForm = !applicationForm || applicationForm.type === 'template';
+  const isAiForm = applicationForm?.type === 'custom' && (applicationForm.fields?.length || 0) > 0;
+  const isImageForm = applicationForm?.type === 'custom' && (applicationForm.images?.length || 0) > 0;
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-background p-4">
@@ -107,37 +109,41 @@ function ApplicationContent() {
           <p className="text-muted-foreground text-center">Fill out the form below to apply.</p>
         </div>
         
-        {useTemplate ? (
+        {isTemplateForm ? (
             <ApplicationForm companyName={company.name || 'Default Company'} />
-        ) : (
+        ) : isAiForm ? (
+            <AiGeneratedForm 
+                formName={applicationForm.name} 
+                fields={applicationForm.fields!}
+                companyName={company.name || 'Default Company'}
+            />
+        ) : isImageForm ? (
              <Card>
                 <CardContent className="p-2 md:p-4">
-                     {customImages.length > 0 ? (
-                        <Carousel className="w-full">
-                            <CarouselContent>
-                                {customImages.map((url, index) => (
-                                    <CarouselItem key={index}>
-                                        <Image
-                                            src={url}
-                                            alt={`Application form page ${index + 1}`}
-                                            width={800}
-                                            height={1100}
-                                            className="w-full h-auto rounded-md object-contain"
-                                        />
-                                    </CarouselItem>
-                                ))}
-                            </CarouselContent>
-                        </Carousel>
-                     ) : (
-                        <div className="text-center py-20 text-muted-foreground">
-                            The application form for this company is not available at the moment.
-                        </div>
-                     )}
+                    <Carousel className="w-full">
+                        <CarouselContent>
+                            {applicationForm.images!.map((url, index) => (
+                                <CarouselItem key={index}>
+                                    <Image
+                                        src={url}
+                                        alt={`Application form page ${index + 1}`}
+                                        width={800}
+                                        height={1100}
+                                        className="w-full h-auto rounded-md object-contain"
+                                    />
+                                </CarouselItem>
+                            ))}
+                        </CarouselContent>
+                    </Carousel>
                      <div className="text-center text-sm text-muted-foreground p-4 border-t mt-4">
                          Since this is a custom form, please contact the company directly to submit your application.
                      </div>
                 </CardContent>
             </Card>
+        ) : (
+             <div className="text-center py-20 text-muted-foreground">
+                The application form for this company is not available at the moment.
+             </div>
         )}
       </div>
     </div>
