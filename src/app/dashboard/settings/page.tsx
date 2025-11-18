@@ -218,7 +218,7 @@ export default function SettingsPage() {
         <CardContent>
           <div className="border rounded-lg p-4 relative">
             <CardDescription className="mb-6">Manage the company profile and associated onboarding users. Remember to save your changes.</CardDescription>
-            <fieldset disabled={!!company.name} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="company-name">Company Name</Label>
@@ -268,7 +268,7 @@ export default function SettingsPage() {
               </div>
             </fieldset>
             <div className="mt-6">
-              <Button size="lg" disabled={isPending || !!company.name} onClick={handleSave}>
+              <Button size="lg" disabled={isPending} onClick={handleSave}>
                 {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Save Company & Continue
               </Button>
@@ -537,3 +537,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
