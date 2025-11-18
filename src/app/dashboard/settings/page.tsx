@@ -401,7 +401,9 @@ export default function SettingsPage() {
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Phase 1: Generate an Application Form</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                Describe the job or role you're hiring for. The AI will generate a complete application form with relevant fields. Example: "A delivery driver application form that requires a valid license and 2 years of experience."
+                                                Describe the job or role you're hiring for. Be as specific as possible for the best results. Include the types of information you need, such as personal details (name, phone, address), work history (CV, experience), specific licenses, etc.
+                                                <br/><br/>
+                                                Example: "An application form for a delivery driver that requires a valid driver's license, 2 years of driving experience, and asks for their full name, phone number, and address."
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
