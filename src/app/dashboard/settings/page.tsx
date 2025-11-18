@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Building, Save, PlusCircle, Trash2, Loader2, Workflow, Edit, Upload, Wand2, Library, Eye, Info, ArrowRight, Link as LinkIcon } from "lucide-react";
+import { Settings, Building, Save, PlusCircle, Trash2, Loader2, Workflow, Edit, Upload, Wand2, Library, Eye, Info, ArrowRight, Link as LinkIcon, File as FileIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -15,16 +15,11 @@ import { getFile, uploadKvFile, deleteFile } from "@/app/actions/kv-actions";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { generateIdForServer } from "@/lib/server-utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { File as FileIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { AiFormBuilderDialog } from "@/components/dashboard/settings/ai-form-builder-dialog";
-import { ApplicationForm } from "@/components/dashboard/application-form";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { generateForm } from "@/ai/flows/generate-form-flow";
 import { AiFormField } from "@/lib/company-schemas";
 
@@ -46,16 +41,13 @@ export default function SettingsPage() {
 
   // State for alert dialogs
   const [isCompanyDetailsDialogOpen, setCompanyDetailsDialogOpen] = useState(false);
-  const [isFormLibraryDialogOpen, setFormLibraryDialogOpen] = useState(false);
-  const [isCustomFormInfoOpen, setIsCustomFormInfoOpen] = useState(false);
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+
   const [isAiBuilderInfoOpen, setIsAiBuilderInfoOpen] = useState(false);
 
 
-  // State for the "click here first" hint
-  const [companyDetailsHintViewed, setCompanyDetailsHintViewed] = useState(false);
-  const [aiBuilderHintViewed, setAiBuilderHintViewed] = useState(false);
-  const showCompanyDetailsHint = !company.name && !companyDetailsHintViewed;
-  const showAiBuilderHint = !aiBuilderHintViewed;
+  const showCompanyDetailsHint = !company.name;
+  const showAiBuilderHint = !company.name;
 
 
   // Load initial company data
@@ -94,85 +86,6 @@ export default function SettingsPage() {
     setCompany(prev => ({ ...prev, [field]: value }));
   };
   
-  const handleProcessChange = (processId: string, field: keyof OnboardingProcess, value: any) => {
-      const updatedProcesses = company.onboardingProcesses?.map(p => {
-          if (p.id === processId) {
-              return { ...p, [field]: value };
-          }
-          return p;
-      }) || [];
-      handleFieldChange('onboardingProcesses', updatedProcesses);
-  };
-
-  const handleApplicationFormChange = (processId: string, field: string, value: any) => {
-      const updatedProcesses = company.onboardingProcesses?.map(p => {
-          if (p.id === processId) {
-              const updatedAppForm = { ...(p.applicationForm || { id: generateIdForServer(), name: "New Form", type: 'template', images: [], fields: [] }), [field]: value };
-              return { ...p, applicationForm: updatedAppForm };
-          }
-          return p;
-      }) || [];
-      handleFieldChange('onboardingProcesses', updatedProcesses);
-  };
-
-
-  const handleLogoChange = (file: File | null) => {
-    if (file) {
-      setLogoFile(file);
-      setLogoPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleCustomFormImageUpload = async (processId: string, file: File) => {
-      if (!company.name) {
-          toast({ variant: 'destructive', title: "Company Name Required", description: "Please enter a company name before uploading images." });
-          return;
-      }
-
-      startTransition(async () => {
-          try {
-              const imageKey = `form-image-${company.name?.replace(/\s+/g, '-')}-${processId}-${Date.now()}`;
-              await uploadKvFile(file, imageKey);
-              
-              const updatedProcesses = company.onboardingProcesses?.map(p => {
-                  if (p.id === processId) {
-                      const appForm = p.applicationForm || { id: generateIdForServer(), name: "Custom Form", type: 'custom', images: [], fields: [] };
-                      const currentImages = appForm.images || [];
-                      const updatedAppForm = { ...appForm, images: [...currentImages, imageKey] };
-                      return { ...p, applicationForm: updatedAppForm };
-                  }
-                  return p;
-              }) || [];
-
-              handleFieldChange('onboardingProcesses', updatedProcesses);
-              toast({ title: "Image Uploaded", description: "The form image has been added." });
-          } catch (error) {
-              toast({ variant: "destructive", title: "Upload Failed", description: (error as Error).message });
-          }
-      });
-  };
-  
-
-  const handleRemoveCustomFormImage = (processId: string, imageUrl: string) => {
-      startTransition(async () => {
-          try {
-              await deleteFile(imageUrl); // imageUrl is the key
-              const updatedProcesses = company.onboardingProcesses?.map(p => {
-                  if (p.id === processId) {
-                      const updatedImages = p.applicationForm?.images?.filter(imgKey => imgKey !== imageUrl) || [];
-                      const updatedAppForm = { ...p.applicationForm, images: updatedImages };
-                      return { ...p, applicationForm: updatedAppForm };
-                  }
-                  return p;
-              }) || [];
-              handleFieldChange('onboardingProcesses', updatedProcesses);
-              toast({ title: "Image Removed", description: "The form image has been deleted." });
-          } catch(error) {
-              toast({ variant: "destructive", title: "Deletion Failed", description: (error as Error).message });
-          }
-      });
-  }
-
   const handleAddNewProcess = (name: string, fields: AiFormField[]) => {
       const newProcess: OnboardingProcess = {
           id: generateIdForServer(),
@@ -183,7 +96,6 @@ export default function SettingsPage() {
       };
       const updatedProcesses = [...(company.onboardingProcesses || []), newProcess];
       handleFieldChange('onboardingProcesses', updatedProcesses);
-      setActiveProcessId(newProcess.id);
   };
   
     const handleGenerateFromPrompt = async () => {
@@ -197,7 +109,7 @@ export default function SettingsPage() {
             handleAddNewProcess(result.formName, result.fields);
             toast({
                 title: 'Form Generated!',
-                description: `"${result.formName}" has been added to your Form Library.`,
+                description: `"${result.formName}" has been added. Don't forget to save your changes.`,
             });
             setPrompt('');
         } catch (error) {
@@ -247,9 +159,6 @@ export default function SettingsPage() {
     }
   }, [company.onboardingProcesses, activeProcessId]);
 
-  const activeProcess = company.onboardingProcesses?.find(p => p.id === activeProcessId);
-
-
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center p-10">
@@ -276,33 +185,11 @@ export default function SettingsPage() {
                   <Building className="h-5 w-5" />
                   <CardTitle className="text-xl">Company Details</CardTitle>
               </div>
-              {showCompanyDetailsHint && (
-                  <div className="flex items-center gap-2 text-primary animate-pulse">
-                      <p className="text-sm font-medium">Click here first!</p>
-                      <ArrowRight className="h-5 w-5" />
-                       <AlertDialog open={isCompanyDetailsDialogOpen} onOpenChange={setCompanyDetailsDialogOpen}>
-                          <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7"><Info className="h-5 w-5 text-muted-foreground" /></Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                              <AlertDialogHeader>
-                                  <AlertDialogTitle>About Company Details</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                      This information will be used across the application portal, including on application forms and documentation requests to personalize the experience for your candidates.
-                                  </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                  <AlertDialogAction onClick={() => setCompanyDetailsHintViewed(true)}>Got it!</AlertDialogAction>
-                              </AlertDialogFooter>
-                          </AlertDialogContent>
-                      </AlertDialog>
-                  </div>
-              )}
           </CardHeader>
         <CardContent>
           <div className="border rounded-lg p-4 relative">
             <CardDescription className="mb-6">Manage the company profile and associated onboarding users. Remember to save your changes.</CardDescription>
-            <fieldset disabled={showCompanyDetailsHint} className="grid grid-cols-1 md:grid-cols-2 gap-8 disabled:opacity-50">
+            <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="company-name">Company Name</Label>
@@ -329,7 +216,7 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                     <Label htmlFor="company-logo">Company Logo</Label>
                     <div className="flex items-center gap-4">
-                        <Input id="company-logo" type="file" className="max-w-xs" onChange={(e) => handleLogoChange(e.target.files?.[0] || null)} accept="image/*" />
+                        <Input id="company-logo" type="file" className="max-w-xs" onChange={(e) => { if (e.target.files) setLogoFile(e.target.files[0])}} accept="image/*" />
                         {logoPreview && <Image src={logoPreview} alt="Logo Preview" width={40} height={40} className="rounded-sm object-contain" />}
                     </div>
                 </div>
@@ -352,7 +239,7 @@ export default function SettingsPage() {
               </div>
             </fieldset>
             <div className="mt-6">
-              <Button size="lg" disabled={isPending || showCompanyDetailsHint} onClick={handleSave}>
+              <Button size="lg" disabled={isPending} onClick={handleSave}>
                 {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Save Company & Continue
               </Button>
@@ -368,22 +255,6 @@ export default function SettingsPage() {
                     <Library className="h-5 w-5" />
                     <CardTitle className="text-xl">Form Library</CardTitle>
                 </div>
-                <AlertDialog open={isFormLibraryDialogOpen} onOpenChange={setFormLibraryDialogOpen}>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7"><Info className="h-5 w-5 text-muted-foreground" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>About the Form Library</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Manage different onboarding processes for various roles. Each process can have its own custom forms, interview screens, and required documents. You can add as many processes as you need.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogAction>Got it!</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
             </div>
             <CardDescription>Manage your saved application forms and onboarding processes.</CardDescription>
         </CardHeader>
@@ -392,12 +263,11 @@ export default function SettingsPage() {
           <div className="md:col-span-1 space-y-2">
             <h3 className="font-semibold px-2">Available Forms</h3>
             <div className="flex flex-col gap-1">
-              {(company.onboardingProcesses || []).map(p => (
+              {(company.onboardingProcesses || []).filter(p => p.id === company.onboardingProcesses?.[0]?.id).map(p => (
                  <Button
                     key={p.id}
-                    variant={activeProcessId === p.id ? "secondary" : "ghost"}
+                    variant={"secondary"}
                     className="justify-start"
-                    onClick={() => setActiveProcessId(p.id)}
                  >
                     {p.name}
                  </Button>
@@ -410,82 +280,16 @@ export default function SettingsPage() {
 
           {/* Right Column: Form Editor */}
           <div className="md:col-span-2 border rounded-lg p-4 space-y-6">
-            {activeProcess ? (
-              <>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="form-name">Form Name</Label>
-                    <Input 
-                      id="form-name" 
-                      value={activeProcess.name}
-                      onChange={(e) => handleProcessChange(activeProcess.id, 'name', e.target.value)}
-                    />
-                  </div>
-                   <Button variant="outline" asChild>
-                      <Link href="/dashboard/settings/preview/application" target="_blank">
-                        <Eye className="mr-2 h-4 w-4" />
-                        Preview Form
-                      </Link>
-                    </Button>
-                </div>
-
-
-                <div className="space-y-2">
-                    <RadioGroup 
-                        value={activeProcess.applicationForm?.type || 'template'} 
-                        onValueChange={(value) => handleApplicationFormChange(activeProcess.id, 'type', value)} 
-                        className="flex items-center gap-4 mt-2"
-                    >
-                        <div className="flex items-center space-x-2"><RadioGroupItem value="template" id={`template-${activeProcess.id}`} /><Label htmlFor={`template-${activeProcess.id}`}>Use Template Application Form</Label></div>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="custom" id={`custom-${activeProcess.id}`} />
-                            <Label htmlFor={`custom-${activeProcess.id}`}>Use Custom Form</Label>
-                             <AlertDialog open={isCustomFormInfoOpen} onOpenChange={setIsCustomFormInfoOpen}>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-5 w-5"><Info className="h-3 w-3 text-muted-foreground cursor-pointer" /></Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Custom Forms</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This option allows you to use your own forms. You can upload images or PDFs of your existing forms. The system will display these images to the applicants. Note: Data from these forms is not automatically captured.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogAction>Got it!</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </RadioGroup>
-                </div>
-                
-                 {activeProcess.applicationForm?.type === 'custom' && (
-                  <div className="p-4 border rounded-md space-y-4 bg-muted/20">
-                      <Label>Custom Form Images</Label>
-                       <Input id={`upload-${activeProcess.id}`} type="file" accept="image/*,application/pdf" onChange={(e) => e.target.files && handleCustomFormImageUpload(activeProcess!.id, e.target.files[0])} disabled={isPending}/>
-                       {(activeProcess.applicationForm.images || []).map((imgKey) => (
-                          <div key={imgKey} className="flex items-center justify-between p-2 rounded-md bg-background">
-                              <div className="flex items-center gap-2 text-sm truncate"><FileIcon className="h-4 w-4" /><span className="truncate">{imgKey.split('/').pop()}</span></div>
-                              <Button variant="ghost" size="icon" className="h-6 w-6 pointer-events-auto" onClick={() => handleRemoveCustomFormImage(activeProcess!.id, imgKey)} disabled={isPending}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                          </div>
-                      ))}
-                  </div>
-                 )}
-                 <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => { setAiBuilderMode('wizard'); setIsAiBuilderOpen(true);}}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add New Process
-                    </Button>
-                    <Button onClick={handleSave}>
-                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                        Save Form
-                    </Button>
-                </div>
-              </>
-            ) : (
-                <div className="text-center text-muted-foreground py-10">Select a form from the library to edit.</div>
-            )}
+             <div className="flex items-center justify-between">
+                <p className="font-semibold">{company.onboardingProcesses?.[0]?.name || 'Default Process'}</p>
+                <Button variant="outline" asChild>
+                    <Link href="/dashboard/settings/preview/application" target="_blank">
+                    <Eye className="mr-2 h-4 w-4" />
+                    Preview Form
+                    </Link>
+                </Button>
+             </div>
+             <p className="text-sm text-muted-foreground">This is the default template form. To create custom forms, use the AI Process Builder below.</p>
           </div>
         </CardContent>
       </Card>
@@ -499,8 +303,6 @@ export default function SettingsPage() {
               </div>
                {showAiBuilderHint && (
                   <div className="flex items-center gap-2 text-primary animate-pulse">
-                      <p className="text-sm font-medium">Click here first!</p>
-                      <ArrowRight className="h-5 w-5" />
                         <AlertDialog open={isAiBuilderInfoOpen} onOpenChange={setIsAiBuilderInfoOpen}>
                             <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-7 w-7"><Info className="h-5 w-5 text-muted-foreground" /></Button>
@@ -513,14 +315,14 @@ export default function SettingsPage() {
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                    <AlertDialogAction onClick={() => setAiBuilderHintViewed(true)}>Got it!</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => {}}>Got it!</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
                   </div>
               )}
           </CardHeader>
-        <fieldset disabled={showAiBuilderHint} className="disabled:opacity-50">
+        <fieldset disabled={showAiBuilderHint}>
         <CardContent className="space-y-6">
              <RadioGroup value={aiBuilderMode} onValueChange={(v) => setAiBuilderMode(v as 'wizard' | 'prompt')} className="flex items-center gap-4">
                 <div className="flex items-center space-x-2"><RadioGroupItem value="wizard" id="wizard" /><Label htmlFor="wizard">Guided Wizard</Label></div>
@@ -541,20 +343,6 @@ export default function SettingsPage() {
                     <div className="p-4 border rounded-lg space-y-3">
                          <div className="flex items-center justify-between">
                             <Label htmlFor="prompt-p1" className="font-semibold">Phase 1: Application Form</Label>
-                             <div className="flex items-center gap-2 text-primary animate-pulse">
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 -ml-2"><Info className="h-5 w-5 text-muted-foreground" /></Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Phase 1 Prompt</AlertDialogTitle>
-                                            <AlertDialogDescription>Describe the application form you want to create. For example: "Create a simple application form for a truck driver position. I need their name, contact info, driver's license number, and 5 years of employment history."</AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogAction>Got it!</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
                         </div>
                         <Textarea id="prompt-p1" placeholder="Describe the application form you need..." value={prompt} onChange={(e) => setPrompt(e.target.value)} />
                         <Button onClick={handleGenerateFromPrompt} disabled={isGenerating}>
@@ -570,20 +358,6 @@ export default function SettingsPage() {
                                 <Label htmlFor="prompt-p2" className="font-semibold">Phase 2: Interview Screen</Label>
                                 <p className="text-xs text-amber-600 font-semibold">Available soon</p>
                             </div>
-                             <div className="flex items-center gap-2 text-primary animate-pulse">
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 -ml-2"><Info className="h-5 w-5 text-muted-foreground" /></Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Phase 2 Prompt</AlertDialogTitle>
-                                            <AlertDialogDescription>This will allow you to generate custom questions and layouts for the interview review phase.</AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogAction>Got it!</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
                         </div>
                         <Textarea id="prompt-p2" placeholder="Describe the interview questions or screen..." disabled />
                         <Button disabled>Generate</Button>
@@ -595,20 +369,6 @@ export default function SettingsPage() {
                             <div className="space-y-1">
                                 <Label htmlFor="prompt-p3" className="font-semibold">Phase 3: Required Documentation</Label>
                                 <p className="text-xs text-amber-600 font-semibold">Available soon</p>
-                            </div>
-                            <div className="flex items-center gap-2 text-primary animate-pulse">
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 -ml-2"><Info className="h-5 w-5 text-muted-foreground" /></Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Phase 3 Prompt</AlertDialogTitle>
-                                            <AlertDialogDescription>This will allow you to specify which documents are required for a specific role.</AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogAction>Got it!</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
                             </div>
                         </div>
                         <Textarea id="prompt-p3" placeholder="List the required documents..." disabled />
@@ -624,13 +384,54 @@ export default function SettingsPage() {
                     handleAddNewProcess(name, fields);
                     toast({
                         title: "AI Form Created!",
-                        description: `"${name}" has been added to your Form Library. You can now customize it.`
+                        description: `"${name}" has been added. Remember to save your changes.`
                     });
                 }}
              />
         </CardContent>
         </fieldset>
       </Card>
+
+      {/* NEW SECTION FOR AI FORMS */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Your IA Forms</CardTitle>
+          <CardDescription>
+            Forms created by the AI will appear here. Remember to save your settings to persist them.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {(company.onboardingProcesses || []).filter(p => p.id !== company.onboardingProcesses?.[0]?.id).map(process => (
+              <div key={process.id} className="flex items-center justify-between p-3 rounded-md border bg-muted/30">
+                <span className="font-medium">{process.name}</span>
+                <Button variant="outline" size="sm" onClick={() => setIsPreviewDialogOpen(true)}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Preview
+                </Button>
+              </div>
+            ))}
+            {(company.onboardingProcesses?.length || 0) <= 1 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No AI-generated forms yet. Use the builder above to create one.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Modal for "Coming Soon" */}
+      <AlertDialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Preview Not Available</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      This functionality is coming soon.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogAction onClick={() => setIsPreviewDialogOpen(false)}>OK</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );
