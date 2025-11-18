@@ -150,22 +150,26 @@ function ApplicationViewContent() {
         setIsCheckingDocs(true);
         setDocsCheckResult(null);
 
+        // This is the key: get the latest data which includes the simulated uploads
+        const latestCandidateData = await getCandidate(applicationData.id);
+        if (!latestCandidateData) {
+            setIsCheckingDocs(false);
+            toast({ variant: "destructive", title: "Error", description: "Could not re-fetch candidate data."});
+            return;
+        }
+
         const companies = await getCompanies();
         const activeProcess = companies[0]?.onboardingProcesses?.[0];
         
+        // Build the submitted docs list based on the latest data
         const submittedDocs: string[] = [];
-        if (applicationData.resume) submittedDocs.push("Resume/CV");
-        if (applicationData.applicationPdfUrl) submittedDocs.push("Application Form");
-        if (applicationData.driversLicense) submittedDocs.push("Driver's License");
-        if (applicationData.idCard) submittedDocs.push("Proof of Identity / ID Card");
-        if (applicationData.proofOfAddress) submittedDocs.push("Proof of Address");
-        if (applicationData.i9) submittedDocs.push("I-9 Form");
-        if (applicationData.w4) submittedDocs.push("W-4 Form");
-        if (applicationData.educationalDiplomas) submittedDocs.push("Educational Diplomas");
-        applicationData.documents?.forEach(d => submittedDocs.push(d.title));
+        if (latestCandidateData.i9) submittedDocs.push("Form I-9 (Employment Eligibility)");
+        if (latestCandidateData.w4) submittedDocs.push("Form W-4 (Tax Withholding)");
+        if (latestCandidateData.idCard) submittedDocs.push("Proof of Identity & Social Security");
+        if (latestCandidateData.educationalDiplomas) submittedDocs.push("Educational Diplomas or Certificates");
 
         const input: DetectMissingDocumentsInput = {
-          candidateProfile: buildCandidateProfile(applicationData),
+          candidateProfile: buildCandidateProfile(latestCandidateData),
           onboardingPhase: "Detailed Documentation",
           submittedDocuments: submittedDocs,
           requiredDocuments: activeProcess?.requiredDocs || [],
@@ -295,7 +299,6 @@ function ApplicationViewContent() {
                         <div className="space-y-4">
                             <DocumentationPhase candidateId={candidateId} />
                             <div className="flex justify-end pt-4 gap-2">
-                                <CopyDocumentationLink candidateId={candidateId} processId={applicationData.applyingFor?.[0]} />
                                 <Button onClick={handleCheckDocsForHire} disabled={applicationData.status !== 'interview' || isCheckingDocs}>
                                     {isCheckingDocs ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserCheck className="mr-2 h-4 w-4" />}
                                     Mark as New Hire
@@ -355,5 +358,3 @@ export default function ApplicationViewPage() {
         </Suspense>
     )
 }
-
-    

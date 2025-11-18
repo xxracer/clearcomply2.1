@@ -1,11 +1,12 @@
 
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm, Controller } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Loader2, File as FileIcon, FileText, Download } from "lucide-react"
+import { Loader2, FileText, Download } from "lucide-react"
 import { z } from "zod"
 
 
@@ -24,6 +25,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { updateCandidateWithDocuments } from "@/app/actions/client-actions"
 import Link from "next/link"
+import { Checkbox } from "../ui/checkbox"
 
 
 // Statically define the required documents
@@ -34,23 +36,15 @@ const requiredDocs = [
   { id: 'educationalDiplomas', label: 'Educational Diplomas or Certificates', officialLink: null },
 ];
 
-const documentationSchema = z.object({
-  i9: z.any().refine((file): file is File => file instanceof File, "Form I-9 is required."),
-  w4: z.any().refine((file): file is File => file instanceof File, "Form W-4 is required."),
-  proofOfIdentity: z.any().refine((file): file is File => file instanceof File, "Proof of Identity is required."),
-  educationalDiplomas: z.any().refine((file): file is File => file instanceof File, "Diplomas or Certificates are required."),
-});
-type DocumentationSchema = z.infer<typeof documentationSchema>;
+// Create a dynamic schema based on the required docs
+const documentationSchemaObject = requiredDocs.reduce((acc, doc) => {
+  acc[doc.id as keyof typeof acc] = z.boolean().default(false);
+  return acc;
+}, {} as Record<string, z.ZodBoolean>);
 
-// Helper to convert a File to a base64 data URI
-async function fileToDataURL(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
+const documentationSchema = z.object(documentationSchemaObject);
+
+type DocumentationSchema = z.infer<typeof documentationSchema>;
 
 
 export function DocumentationForm({ companyName, candidateId }: { companyName: string, candidateId?: string | null }) {
@@ -74,18 +68,15 @@ export function DocumentationForm({ companyName, candidateId }: { companyName: s
 
         setIsSubmitting(true);
         try {
+            // This is a simulation. We'll just record which documents were checked.
+            // The "true" value will just be a placeholder string.
             const documentsToUpload: Record<string, string> = {};
             
-            for (const doc of requiredDocs) {
-                const file = data[doc.id as keyof typeof data];
-                if (file instanceof File) {
-                    const dataUrl = await fileToDataURL(file);
-                    // Map specific IDs to the correct field names in ApplicationData
-                    const key = doc.id === 'proofOfIdentity' ? 'idCard' : doc.id;
-                    documentsToUpload[key] = dataUrl;
-                }
-            }
-
+            if (data.i9) documentsToUpload['i9'] = "submitted";
+            if (data.w4) documentsToUpload['w4'] = "submitted";
+            if (data.proofOfIdentity) documentsToUpload['idCard'] = "submitted";
+            if (data.educationalDiplomas) documentsToUpload['educationalDiplomas'] = "submitted";
+            
             const result = await updateCandidateWithDocuments(
                 candidateId, 
                 documentsToUpload
@@ -94,7 +85,7 @@ export function DocumentationForm({ companyName, candidateId }: { companyName: s
             if (result.success) {
                 toast({
                   title: "Documents Submitted",
-                  description: "Candidate documents have been uploaded.",
+                  description: "Your document submission has been recorded.",
                 });
                 router.push('/documentation/success');
             } else {
@@ -120,18 +111,24 @@ export function DocumentationForm({ companyName, candidateId }: { companyName: s
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Card>
             <CardContent className="pt-6 space-y-6">
-                {requiredDocs.map(doc => {
-                    return (
-                        <div key={doc.id}>
-                            <Controller
-                                control={form.control}
-                                name={doc.id as keyof DocumentationSchema}
-                                render={({ field: { onChange, ...fieldProps }, fieldState }) => {
-                                    const file = form.watch(doc.id as any);
-                                    return (
-                                        <FormItem>
-                                            <FormLabel className="font-semibold">{doc.label} <span className="text-destructive">*</span></FormLabel>
-                                            {doc.officialLink && (
+                {requiredDocs.map(doc => (
+                    <FormField
+                        key={doc.id}
+                        control={form.control}
+                        name={doc.id as keyof DocumentationSchema}
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                               <FormControl>
+                                    <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                                <div className="space-y-1 leading-none w-full">
+                                     <FormLabel className="font-semibold">{doc.label}</FormLabel>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            {doc.officialLink ? (
                                                 <FormDescription>
                                                     Download the official form, fill it out, save it, and then upload it here.
                                                     <Button variant="link" asChild className="p-1 h-auto ml-1">
@@ -141,33 +138,17 @@ export function DocumentationForm({ companyName, candidateId }: { companyName: s
                                                         </Link>
                                                     </Button>
                                                 </FormDescription>
+                                            ) : (
+                                                <FormDescription>Upload a scan or photo of your document.</FormDescription>
                                             )}
-                                            <FormControl>
-                                                <div className="relative">
-                                                    <Input 
-                                                      type="file" 
-                                                      accept="application/pdf,image/*" 
-                                                      {...fieldProps} 
-                                                      onChange={(e) => onChange(e.target.files?.[0])} 
-                                                      value={undefined}
-                                                      className="pr-12"
-                                                    />
-                                                    <FileIcon className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                                </div>
-                                            </FormControl>
-                                             {file instanceof File && (
-                                                <FormDescription className="flex items-center gap-2 pt-1">
-                                                   <FileText className="h-4 w-4 text-muted-foreground" /> {file.name}
-                                                </FormDescription>
-                                             )}
-                                            <FormMessage />
-                                        </FormItem>
-                                    )
-                                }}
-                            />
-                        </div>
-                    )
-                })}
+                                        </div>
+                                        <Button type="button" variant="secondary" size="sm" disabled>Upload Document</Button>
+                                    </div>
+                                </div>
+                            </FormItem>
+                        )}
+                    />
+                ))}
           </CardContent>
         </Card>
 
