@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,7 @@ import { Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateFormFromOptions, GenerateFormOptionsOutput } from '@/ai/flows/generate-form-from-options-flow';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { FormItem } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -39,11 +41,11 @@ export function AiFormBuilderDialog({ isOpen, onOpenChange, companyName, onFormG
     const [isLoading, setIsLoading] = useState(false);
     const [generatedForm, setGeneratedForm] = useState<{ name: string; date: Date; fields: GenerateFormOptionsOutput['fields'] } | null>(null);
     const [isPending, startTransition] = useTransition();
-
+    const [isComingSoonOpen, setComingSoonOpen] = useState(false);
 
     // Form State
     const [formPurpose, setFormPurpose] = useState('');
-    const [isMultiCompany, setIsMultiCompany] = useState('no');
+    const [selectedPhase, setSelectedPhase] = useState('application');
     const [selectedPersonalInfo, setSelectedPersonalInfo] = useState<string[]>(['fullName', 'contactInfo']);
     const [includeReferences, setIncludeReferences] = useState('no');
     const [includeEducation, setIncludeEducation] = useState('no');
@@ -55,7 +57,7 @@ export function AiFormBuilderDialog({ isOpen, onOpenChange, companyName, onFormG
         setIsLoading(false);
         setGeneratedForm(null);
         setFormPurpose('');
-        setIsMultiCompany('no');
+        setSelectedPhase('application');
         setSelectedPersonalInfo(['fullName', 'contactInfo']);
         setIncludeReferences('no');
         setIncludeEducation('no');
@@ -69,6 +71,15 @@ export function AiFormBuilderDialog({ isOpen, onOpenChange, companyName, onFormG
         }
         onOpenChange(open);
     };
+    
+    const handleNextStep = () => {
+        if (selectedPhase !== 'application') {
+            setComingSoonOpen(true);
+        } else {
+            setStep(s => s + 1);
+        }
+    };
+
 
     const handleGenerateForm = async () => {
         if (!formPurpose) {
@@ -80,8 +91,8 @@ export function AiFormBuilderDialog({ isOpen, onOpenChange, companyName, onFormG
         try {
             const result = await generateFormFromOptions({
                 formPurpose,
-                companyName: isMultiCompany === 'no' ? companyName : undefined,
-                includeLogo: false, // This is a design choice, not a form field.
+                companyName: companyName,
+                includeLogo: false,
                 personalInfo: selectedPersonalInfo.map(id => personalInfoOptions.find(opt => opt.id === id)!.label),
                 includeReferences: includeReferences === 'yes',
                 includeEducation: includeEducation === 'yes',
@@ -178,12 +189,14 @@ export function AiFormBuilderDialog({ isOpen, onOpenChange, companyName, onFormG
                             <Label htmlFor="formPurpose">What is the main purpose of this form? (e.g., "Driver Application", "Office Staff Onboarding")</Label>
                             <Input id="formPurpose" value={formPurpose} onChange={(e) => setFormPurpose(e.target.value)} />
                         </div>
-                        <div className="space-y-2">
-                            <Label>Is this form for one specific company or multiple companies?</Label>
-                            <RadioGroup value={isMultiCompany} onValueChange={setIsMultiCompany} className="flex gap-4">
-                                <FormItem className="flex items-center space-x-2"><RadioGroupItem value="no" id="comp-no" /><Label htmlFor="comp-no" className="ml-2 font-normal">One company</Label></FormItem>
-                                <FormItem className="flex items-center space-x-2"><RadioGroupItem value="yes" id="comp-yes" /><Label htmlFor="comp-yes" className="ml-2 font-normal">Multiple</Label></FormItem>
+                        <div className="space-y-3">
+                            <Label>What part of the onboarding process is this for?</Label>
+                            <RadioGroup value={selectedPhase} onValueChange={setSelectedPhase} className="flex flex-col space-y-2">
+                                <FormItem className="flex items-center space-x-2"><RadioGroupItem value="application" id="phase-app" /><Label htmlFor="phase-app" className="font-normal">Application Form</Label></FormItem>
+                                <FormItem className="flex items-center space-x-2"><RadioGroupItem value="interview" id="phase-int" /><Label htmlFor="phase-int" className="font-normal">Interview Screen</Label></FormItem>
+                                <FormItem className="flex items-center space-x-2"><RadioGroupItem value="documentation" id="phase-doc" /><Label htmlFor="phase-doc" className="font-normal">Documentation Process</Label></FormItem>
                             </RadioGroup>
+                             <p className="text-xs text-muted-foreground">This section is for creating the form for your candidates.</p>
                         </div>
                     </div>
                 );
@@ -249,38 +262,49 @@ export function AiFormBuilderDialog({ isOpen, onOpenChange, companyName, onFormG
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-            <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                    <DialogTitle>AI Form Builder</DialogTitle>
-                    {!generatedForm && <DialogDescription>
-                        Answer a few questions and the AI will generate a form structure for you. (Step {step} of 3)
-                    </DialogDescription>}
-                </DialogHeader>
-                
-                <div className="py-4">
-                    {renderStep()}
-                </div>
-
-                {!generatedForm && (
-                     <div className="flex justify-between">
-                        <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={step === 1 || isLoading}>
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                        </Button>
-                        {step < 3 && (
-                            <Button onClick={() => setStep(s => s + 1)} disabled={isLoading}>
-                                Next <ArrowRight className="ml-2 h-4 w-4" />
-                            </Button>
-                        )}
-                        {step === 3 && (
-                             <Button onClick={handleGenerateForm} disabled={isLoading}>
-                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                Generate Form
-                            </Button>
-                        )}
+        <>
+            <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle>AI Form Builder</DialogTitle>
+                        {!generatedForm && <DialogDescription>
+                            Answer a few questions and the AI will generate a form structure for you. (Step {step} of 3)
+                        </DialogDescription>}
+                    </DialogHeader>
+                    
+                    <div className="py-4">
+                        {renderStep()}
                     </div>
-                )}
-            </DialogContent>
-        </Dialog>
+
+                    {!generatedForm && (
+                        <DialogFooter>
+                            <div className="flex justify-between w-full">
+                                <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={step === 1 || isLoading}>
+                                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                                </Button>
+                                {step < 3 ? (
+                                    <Button onClick={handleNextStep} disabled={isLoading}>
+                                        Next <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                ) : (
+                                    <Button onClick={handleGenerateForm} disabled={isLoading}>
+                                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Generate Form
+                                    </Button>
+                                )}
+                            </div>
+                        </DialogFooter>
+                    )}
+                </DialogContent>
+            </Dialog>
+            <AlertDialog open={isComingSoonOpen} onOpenChange={setComingSoonOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>This feature is coming soon.</AlertDialogTitle>
+                    </AlertDialogHeader>
+                    <AlertDialogAction onClick={() => setComingSoonOpen(false)}>Got it!</AlertDialogAction>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }

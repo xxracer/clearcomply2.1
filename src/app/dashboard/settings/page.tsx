@@ -61,20 +61,7 @@ export default function SettingsPage() {
       setIsLoading(true);
       const companies = await getCompanies();
       const firstCompany = companies[0] || {
-        onboardingProcesses: [
-          {
-            id: 'default',
-            name: 'Default Process',
-            applicationForm: { id: 'default_form', name: 'Default Application', type: 'template' },
-            interviewScreen: { type: 'template' },
-            requiredDocs: [
-              { id: 'i9', label: 'Form I-9 (Employment Eligibility)', type: 'upload' },
-              { id: 'w4', label: 'Form W-4 (Tax Withholding)', type: 'upload' },
-              { id: 'proofOfIdentity', label: 'Proof of Identity & Social Security', type: 'upload' },
-              { id: 'educationalDiplomas', label: 'Educational Diplomas or Certificates', type: 'upload' },
-            ]
-          }
-        ]
+        onboardingProcesses: []
       };
       
       setCompany(firstCompany);
@@ -180,10 +167,12 @@ export default function SettingsPage() {
   const [activeProcessId, setActiveProcessId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Set a default active process ID if none is set and processes exist
     if (!activeProcessId && company.onboardingProcesses && company.onboardingProcesses.length > 0) {
       setActiveProcessId(company.onboardingProcesses[0].id);
     }
   }, [company.onboardingProcesses, activeProcessId]);
+
 
     const handleDeleteProcess = (processId: string) => {
         if (!company.id) return;
@@ -195,6 +184,10 @@ export default function SettingsPage() {
                     title: "Process Deleted",
                     description: `The onboarding process has been removed.`,
                 });
+                // If the deleted process was the active one, reset it
+                if(activeProcessId === processId) {
+                    setActiveProcessId(null);
+                }
             } else {
                 toast({ variant: 'destructive', title: 'Deletion Failed', description: result.error });
             }
@@ -349,7 +342,9 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Left Column: Process List */}
                   <div className="md:col-span-1 border rounded-lg p-4 space-y-2">
-                      <h3 className="font-semibold text-lg px-2">{activePhase === 'application' ? 'Available Forms' : 'Available Interview Screens'}</h3>
+                      <h3 className="font-semibold text-lg px-2">
+                        {activePhase === 'application' ? 'Available Forms' : 'Available Interview Screens'}
+                      </h3>
                       <div className="space-y-1">
                           <button 
                             className={cn(
@@ -358,7 +353,7 @@ export default function SettingsPage() {
                             )}
                             onClick={() => setActiveProcessId('default')}
                           >
-                              {activePhase === 'application' ? 'Custom Form 1' : 'Default Interview 1'}
+                            {activePhase === 'application' ? 'Custom Form 1' : 'Default Interview 1'}
                           </button>
                           <div className="p-2 text-muted-foreground opacity-50 flex justify-between items-center">
                               <span>{activePhase === 'application' ? 'Custom Form 2' : 'Default Interview 2'}</span>
@@ -378,7 +373,7 @@ export default function SettingsPage() {
                    <div className="md:col-span-2 border rounded-lg p-4 min-h-[250px]">
                       {activeProcessId ? (
                            <div className="space-y-6">
-                               <h3 className="text-lg font-semibold">Editing: {company.onboardingProcesses?.find(p=>p.id === activeProcessId)?.name === 'Default Process' ? 'Custom Form 1' : company.onboardingProcesses?.find(p=>p.id === activeProcessId)?.name}</h3>
+                               <h3 className="text-lg font-semibold">Editing: {activePhase === 'application' ? 'Custom Form 1' : 'Default Interview 1'}</h3>
                                
                                <div onClick={() => setActivePhase('application')} className={cn("p-4 border rounded-lg space-y-3 cursor-pointer transition-all", activePhase === 'application' && "ring-2 ring-primary")}>
                                    <div className="flex items-center justify-between">
