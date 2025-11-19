@@ -350,30 +350,48 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-1 space-y-2">
-            <h3 className="font-semibold px-2">Available Processes</h3>
+            <h3 className="font-semibold px-2">Application Forms</h3>
             <div className="flex flex-col gap-1">
-                <div className={cn("flex items-center justify-between p-2 rounded-md", activeProcessId === company.onboardingProcesses?.[0]?.id && "bg-muted")}>
-                    <button
-                    className="flex-1 text-left"
-                    onClick={() => setActiveProcessId(company.onboardingProcesses?.[0]?.id || null)}
-                    >
-                    <span className="font-medium">{company.onboardingProcesses?.[0]?.name || 'Default Process'}</span>
-                    </button>
-                </div>
+                {(company.onboardingProcesses || []).map(p => (
+                     <div key={p.id} className={cn("flex items-center justify-between p-2 rounded-md", activeProcessId === p.id && "bg-muted")}>
+                        <button
+                        className="flex-1 text-left"
+                        onClick={() => setActiveProcessId(p.id)}
+                        >
+                        <span className="font-medium">{p.name}</span>
+                        </button>
+                    </div>
+                ))}
             </div>
           </div>
 
-          <div className="md:col-span-2 border rounded-lg p-4 space-y-6">
-             <div className="flex items-center justify-between">
-                <p className="font-semibold">{company.onboardingProcesses?.find(p=>p.id === activeProcessId)?.name || 'Select a Process'}</p>
-                 <Button asChild variant="outline">
-                    <Link href="/dashboard/settings/preview/application" target="_blank">
-                        <Eye className="mr-2 h-4 w-4" />
-                        Preview Form
-                    </Link>
-                </Button>
+          <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 border rounded-lg p-4">
+             <div className="space-y-2">
+                <h3 className="font-semibold">Interview Process</h3>
+                 <div className="p-4 border rounded-md space-y-3">
+                    <p className="font-medium">Default Interview</p>
+                    <p className="text-sm text-muted-foreground">Standard interview questions and review form.</p>
+                     <Button asChild variant="outline" size="sm">
+                        <Link href="/dashboard/settings/preview/interview" target="_blank">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview
+                        </Link>
+                    </Button>
+                </div>
              </div>
-             <p className="text-sm text-muted-foreground">This is the default template form. To create custom forms, use the AI Process Builder below.</p>
+             <div className="space-y-2">
+                <h3 className="font-semibold">Documentation Process</h3>
+                 <div className="p-4 border rounded-md space-y-3">
+                    <p className="font-medium">Default Documentation</p>
+                    <p className="text-sm text-muted-foreground">Standard set of required documents (I-9, W-4, etc.).</p>
+                     <Button asChild variant="outline" size="sm">
+                        <Link href="/dashboard/settings/preview/documentation" target="_blank">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview
+                        </Link>
+                    </Button>
+                </div>
+             </div>
           </div>
         </CardContent>
       </Card>
@@ -606,5 +624,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
