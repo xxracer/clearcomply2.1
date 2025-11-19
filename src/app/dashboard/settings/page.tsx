@@ -34,18 +34,14 @@ export default function SettingsPage() {
   const [logoFile, setLogoFile] = useState<File | undefined>();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  // State to determine if the company has been saved, which dictates field disabling
   const [isCompanySaved, setIsCompanySaved] = useState(false);
-  // State to specifically trigger the confirmation dialog
   const [showSavedDialog, setShowSavedDialog] = useState(false);
 
-  // AI Form Builder state
   const [isAiBuilderOpen, setIsAiBuilderOpen] = useState(false);
   const [aiBuilderMode, setAiBuilderMode] = useState<'wizard' | 'prompt'>('wizard');
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // State for alert dialogs
   const [isCompanyDetailsDialogOpen, setCompanyDetailsDialogOpen] = useState(false);
   const [isProcessesDialogOpen, setIsProcessesDialogOpen] = useState(false);
   const [isAiBuilderInfoOpen, setIsAiBuilderInfoOpen] = useState(false);
@@ -54,6 +50,8 @@ export default function SettingsPage() {
   const [isPhase2InfoOpen, setIsPhase2InfoOpen] = useState(false);
   const [isPhase3InfoOpen, setIsPhase3InfoOpen] = useState(false);
   const [isComingSoonOpen, setComingSoonOpen] = useState(false);
+  
+  const [activePhase, setActivePhase] = useState<'application' | 'interview' | 'documentation'>('application');
 
 
   const showCompanyDetailsHint = !company.name;
@@ -63,7 +61,6 @@ export default function SettingsPage() {
       setIsLoading(true);
       const companies = await getCompanies();
       const firstCompany = companies[0] || {
-        // Set default onboarding process for new companies
         onboardingProcesses: [
           {
             id: 'default',
@@ -98,7 +95,6 @@ export default function SettingsPage() {
       setIsLoading(false);
     }
 
-  // Load initial company data
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -362,7 +358,7 @@ export default function SettingsPage() {
                             )}
                             onClick={() => setActiveProcessId('default')}
                           >
-                              Default Process
+                              Custom Form 1
                           </button>
                           <div className="p-2 text-muted-foreground opacity-50 flex justify-between items-center">
                               <span>Custom Form 2</span>
@@ -379,14 +375,14 @@ export default function SettingsPage() {
                       </div>
                   </div>
                   {/* Right Column: Process Details */}
-                  <div className="md:col-span-2 border rounded-lg p-4 min-h-[250px]">
+                   <div className="md:col-span-2 border rounded-lg p-4 min-h-[250px]">
                       {activeProcessId ? (
                            <div className="space-y-6">
-                               <h3 className="text-lg font-semibold">Editing: {company.onboardingProcesses?.find(p=>p.id === activeProcessId)?.name}</h3>
+                               <h3 className="text-lg font-semibold">Editing: {company.onboardingProcesses?.find(p=>p.id === activeProcessId)?.name === 'Default Process' ? 'Custom Form 1' : company.onboardingProcesses?.find(p=>p.id === activeProcessId)?.name}</h3>
                                
-                               <div className="p-4 border rounded-lg space-y-3">
+                               <div onClick={() => setActivePhase('application')} className={cn("p-4 border rounded-lg space-y-3 cursor-pointer transition-all", activePhase === 'application' && "ring-2 ring-primary")}>
                                    <div className="flex items-center justify-between">
-                                       <Label className="font-semibold">Phase 1: Application Form</Label>
+                                       <Label className="font-semibold cursor-pointer">Phase 1: Application Form</Label>
                                    </div>
                                     <p className="text-sm text-muted-foreground">Using the "Default Application" template. To use a custom form, create one with the AI Builder below.</p>
                                    <div className="flex gap-2">
@@ -399,10 +395,10 @@ export default function SettingsPage() {
                                    </div>
                                </div>
 
-                               <div className="p-4 border rounded-lg space-y-3">
+                               <div onClick={() => setActivePhase('interview')} className={cn("p-4 border rounded-lg space-y-3 cursor-pointer transition-all", activePhase === 'interview' && "ring-2 ring-primary")}>
                                    <div className="flex items-center justify-between">
                                        <div>
-                                           <Label className="font-semibold">Phase 2: Interview Screen</Label>
+                                           <Label className="font-semibold cursor-pointer">Phase 2: Interview Screen</Label>
                                        </div>
                                    </div>
                                    <p className="text-sm text-muted-foreground">Using the "Default Interview" template. Create a custom screen from a file or preview the default.</p>
@@ -416,10 +412,10 @@ export default function SettingsPage() {
                                    </div>
                                </div>
 
-                               <div className="p-4 border rounded-lg space-y-3 opacity-50">
+                               <div onClick={() => setActivePhase('documentation')} className={cn("p-4 border rounded-lg space-y-3 cursor-pointer transition-all opacity-50", activePhase === 'documentation' && "ring-2 ring-primary")}>
                                    <div className="flex items-center justify-between">
                                        <div>
-                                           <Label className="font-semibold">Phase 3: Required Documentation</Label>
+                                           <Label className="font-semibold cursor-pointer">Phase 3: Required Documentation</Label>
                                            <p className="text-xs text-amber-600 font-semibold">Available soon</p>
                                        </div>
                                    </div>
