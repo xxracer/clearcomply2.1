@@ -314,35 +314,37 @@ export default function SettingsPage() {
       </Card>
       
       <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-              <div className="flex items-center gap-2">
-                  <Library className="h-5 w-5" />
-                  <CardTitle className="text-xl">Onboarding Processes</CardTitle>
-              </div>
-              {showProcessesHint && (
-                  <div className="flex items-center gap-2 text-primary animate-pulse">
-                      <p className="text-sm font-medium hidden md:block">Click here first!</p>
-                      <ArrowRight className="h-4 w-4 hidden md:block" />
-                      <AlertDialog open={isProcessesDialogOpen} onOpenChange={setIsProcessesDialogOpen}>
-                          <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7"><Info className="h-5 w-5 text-muted-foreground" /></Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                              <AlertDialogHeader>
-                                  <AlertDialogTitle>Manage Onboarding Processes</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                      This section allows you to manage your company's onboarding processes. Select a process from the list on the left to view or edit its details on the right.
-                                  </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                  <AlertDialogAction onClick={() => { }}>Got it!</AlertDialogAction>
-                              </AlertDialogFooter>
-                          </AlertDialogContent>
-                      </AlertDialog>
-                  </div>
-              )}
-          </CardHeader>
-          <CardDescription className="px-6">Manage your saved application forms and onboarding processes.</CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between">
+            <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                    <Library className="h-5 w-5" />
+                    <CardTitle className="text-xl">Onboarding Processes</CardTitle>
+                </div>
+                <CardDescription>Manage your saved application forms and onboarding processes.</CardDescription>
+            </div>
+            {showProcessesHint && (
+                <div className="flex items-center gap-2 text-primary animate-pulse">
+                    <p className="text-sm font-medium hidden md:block">Click here first!</p>
+                    <ArrowRight className="h-4 w-4 hidden md:block" />
+                    <AlertDialog open={isProcessesDialogOpen} onOpenChange={setIsProcessesDialogOpen}>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7"><Info className="h-5 w-5 text-muted-foreground" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Manage Onboarding Processes</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This section allows you to manage your company's onboarding processes. Select a process from the list on the left to view or edit its details on the right.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogAction onClick={() => { }}>Got it!</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            )}
+        </CardHeader>
           <CardContent className="pt-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Left Column: Process List */}
