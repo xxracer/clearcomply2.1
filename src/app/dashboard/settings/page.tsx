@@ -695,6 +695,7 @@ export default function SettingsPage() {
                 </div>
                 <AlertDialogTitle className="text-center">AI Form Creation</AlertDialogTitle>
                 <AlertDialogDescription className="text-center">
+                   <AlertDialogTitle>Coming Soon!</AlertDialogTitle>
                     Leverage AI to generate a custom application form. Simply describe the role or requirements, and the AI will build a structured form for you.
                 </AlertDialogDescription>
               </AlertDialogHeader>
