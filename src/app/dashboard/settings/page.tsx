@@ -208,7 +208,7 @@ export default function SettingsPage() {
         <div className="flex items-center gap-2">
           <Settings className="h-8 w-8 text-foreground" />
           <div>
-            <h1 className="text-3xl font-headline font-bold text-foreground">System Settings</h1>
+            <h1 className="text-3xl font-headline font-bold text-foreground">)Company Settings</h1>
             <p className="text-muted-foreground">Manage company profile and onboarding processes.</p>
           </div>
         </div>
