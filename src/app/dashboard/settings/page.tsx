@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useTransition } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { getCompanies, createOrUpdateCompany, addOnboardingProcess, deleteOnboardingProcess } from "@/app/actions/company-actions";
 import { type Company, type OnboardingProcess, requiredDocSchema, type RequiredDoc, type ApplicationForm as AppFormType, AiFormField } from "@/lib/company-schemas";
 import { getFile, uploadKvFile, deleteFile } from "@/app/actions/kv-actions";
@@ -17,7 +18,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { generateIdForServer } from "@/lib/server-utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { AiFormBuilderDialog } from "@/components/dashboard/settings/ai-form-builder-dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,6 +50,7 @@ export default function SettingsPage() {
   const [isPhase2InfoOpen, setIsPhase2InfoOpen] = useState(false);
   const [isPhase3InfoOpen, setIsPhase3InfoOpen] = useState(false);
   const [isComingSoonOpen, setComingSoonOpen] = useState(false);
+  const [isAiCreateInfoOpen, setIsAiCreateInfoOpen] = useState(false);
   
   const [activePhase, setActivePhase] = useState<'application' | 'interview' | 'documentation'>('application');
 
@@ -170,6 +171,8 @@ export default function SettingsPage() {
     // Set a default active process ID if none is set and processes exist
     if (!activeProcessId && company.onboardingProcesses && company.onboardingProcesses.length > 0) {
       setActiveProcessId(company.onboardingProcesses[0].id);
+    } else if (!activeProcessId) {
+      setActiveProcessId('default')
     }
   }, [company.onboardingProcesses, activeProcessId]);
 
@@ -343,7 +346,7 @@ export default function SettingsPage() {
                   {/* Left Column: Process List */}
                   <div className="md:col-span-1 border rounded-lg p-4 space-y-2">
                       <h3 className="font-semibold text-lg px-2">
-                        {activePhase === 'application' ? 'Forms Library' : 'Available Interview Screens'}
+                        {activePhase === 'application' ? 'Forms library' : 'Available Interview Screens'}
                       </h3>
                       <div className="space-y-1">
                           <button 
@@ -384,8 +387,8 @@ export default function SettingsPage() {
                                        <Button variant="secondary" size="sm" onClick={() => setComingSoonOpen(true)}>
                                           <Upload className="mr-2 h-4 w-4" /> Create from File
                                        </Button>
-                                      <Button variant="secondary" size="sm" onClick={() => setComingSoonOpen(true)}>
-                                          <Upload className="mr-2 h-4 w-4" /> Create Whit IA
+                                      <Button variant="secondary" size="sm" onClick={() => setIsAiCreateInfoOpen(true)}>
+                                          <Wand2 className="mr-2 h-4 w-4" /> Create With AI
                                        </Button>
                                        <Button variant="outline" size="sm" asChild>
                                             <Link href="/dashboard/settings/preview/application" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview</Link>
@@ -404,6 +407,9 @@ export default function SettingsPage() {
                                         <Button variant="secondary" size="sm" onClick={() => setComingSoonOpen(true)}>
                                           <Upload className="mr-2 h-4 w-4" /> Create from File
                                        </Button>
+                                      <Button variant="secondary" size="sm" onClick={() => setIsAiCreateInfoOpen(true)}>
+                                          <Wand2 className="mr-2 h-4 w-4" /> Create With AI
+                                       </Button>
                                        <Button variant="outline" size="sm" asChild>
                                           <Link href="/dashboard/settings/preview/interview" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview</Link>
                                        </Button>
@@ -421,6 +427,9 @@ export default function SettingsPage() {
                                     <div className="flex gap-2">
                                         <Button variant="secondary" size="sm" disabled>
                                           <Edit className="mr-2 h-4 w-4" /> Edit Documents
+                                       </Button>
+                                       <Button variant="secondary" size="sm" onClick={() => setIsAiCreateInfoOpen(true)}>
+                                          <Wand2 className="mr-2 h-4 w-4" /> Create With AI
                                        </Button>
                                        <Button variant="outline" size="sm" disabled>
                                            <Eye className="mr-2 h-4 w-4" />Preview
@@ -676,6 +685,23 @@ export default function SettingsPage() {
                 <AlertDialogAction onClick={() => setComingSoonOpen(false)}>Got it!</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
+      </AlertDialog>
+      
+      <AlertDialog open={isAiCreateInfoOpen} onOpenChange={setIsAiCreateInfoOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 mx-auto mb-4">
+                    <Wand2 className="h-6 w-6 text-primary" />
+                </div>
+                <AlertDialogTitle className="text-center">AI Form Creation</AlertDialogTitle>
+                <AlertDialogDescription className="text-center">
+                    Leverage AI to generate a custom application form. Simply describe the role or requirements, and the AI will build a structured form for you.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogAction onClick={() => setIsAiCreateInfoOpen(false)}>Got it!</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
       </AlertDialog>
 
     </div>
