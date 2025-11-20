@@ -384,6 +384,9 @@ export default function SettingsPage() {
                                        <Button variant="secondary" size="sm" onClick={() => setComingSoonOpen(true)}>
                                           <Upload className="mr-2 h-4 w-4" /> Create from File
                                        </Button>
+                                      <Button variant="secondary" size="sm" onClick={() => setComingSoonOpen(true)}>
+                                          <Upload className="mr-2 h-4 w-4" /> Create Whit IA
+                                       </Button>
                                        <Button variant="outline" size="sm" asChild>
                                             <Link href="/dashboard/settings/preview/application" target="_blank"><Eye className="mr-2 h-4 w-4" />Preview</Link>
                                        </Button>
