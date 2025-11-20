@@ -311,9 +311,9 @@ export default function SettingsPage() {
             <div>
                 <div className="flex items-center gap-2">
                     <Library className="h-5 w-5" />
-                    <CardTitle className="text-xl">Onboarding Processes</CardTitle>
+                    <CardTitle className="text-xl">Onboarding Setup</CardTitle>
                 </div>
-                <CardDescription>Manage your saved application forms and onboarding processes.</CardDescription>
+                <CardDescription>Build and customize your hiring and onboarding workflow.</CardDescription>
             </div>
             {showProcessesHint && (
                 <div className="flex items-center gap-2 text-primary animate-pulse">
@@ -587,9 +587,9 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Your IA Forms</CardTitle>
+          <CardTitle>Your Application Workflows</CardTitle>
           <CardDescription>
-            Forms created by the AI will appear here. They are saved automatically.
+            Here you will find your existing job applications and onboarding workflows.
           </CardDescription>
         </CardHeader>
         <CardContent>
